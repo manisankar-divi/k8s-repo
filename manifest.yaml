@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: myapp-container
-          image: manisankardivi/new:${VERSION}
+          image: manisankardivi/new:1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 80

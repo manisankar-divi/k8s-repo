@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: myapp-container
-          image: manisankardivi/new:200.000.004
+          image: manisankardivi/new:200.000.006
           imagePullPolicy: Always
           ports:
             - containerPort: 80

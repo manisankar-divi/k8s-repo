@@ -125,3 +125,4 @@ curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
 echo "Release published: $NEW_VERSION"
+

@@ -55,8 +55,8 @@ for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); d
 
   SHORT_COMMIT=${MAIN_COMMIT:0:7} # Extract short commit hash
 
-  # Format entry with squash and merge commit ID
-  ENTRY="$SHORT_COMMIT: $PR_TITLE (#$PR)"
+  # Format entry with squash and merge commit ID in the required format
+  ENTRY="feat: ${PR_TITLE} (${SHORT_COMMIT}) (#$PR)"
 
   # Categorize commits
   if [[ "$PR_TITLE" =~ ^feat: ]]; then

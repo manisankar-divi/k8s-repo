@@ -1,119 +1,122 @@
 #!/bin/bash
 
-# Exit on errors
+# Exit script on error
 set -e
 set -x
 
-# Ensure environment variables are set
-if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ] || [ -z "$GITHUB_TOKEN" ]; then
-  echo "Error: Missing required environment variables."
+# Ensure required environment variables are set
+if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
+  echo "Error: REPO_OWNER and REPO_NAME environment variables must be set."
   exit 1
 fi
 
-# Get today's date version
-YEAR=$(date +'%y')
-MONTH=$(date +'%-m')
-DAY=$(date +'%-d')
+if [ -z "$GITHUB_TOKEN" ]; then
+  echo "Error: GITHUB_TOKEN environment variable is not set. Exiting."
+  exit 1
+fi
 
-# Fetch latest tag for today
+# Step 1: Get the current date in YYYY.M.D format (no leading zeros)
+CURRENT_DATE=$(date +'%Y.%m.%d')
+
+# Extract YEAR, MONTH, DAY without leading zeros
+YEAR=$(date +'%y')   # Last two digits (e.g., 25 for 2025)
+MONTH=$(date +'%-m') # Remove leading zeros (e.g., 1 for January)
+DAY=$(date +'%-d')   # Remove leading zeros (e.g., 5 for 5th)
+
+# Fetch tags and find the latest increment for the day
 git fetch --tags
 LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" --sort=-version:refname | head -n 1)
 
-NEXT_INCREMENT=1
-if [ -n "$LATEST_TAG" ]; then
+# Extract the incremental part (pad with leading zeros for sorting)
+if [ -z "$LATEST_TAG" ]; then
+  NEXT_INCREMENT=1
+else
   LATEST_INCREMENT=$(echo "$LATEST_TAG" | awk -F'.' '{print $NF}')
   NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
 fi
 
+# Format the new version with leading zeros for the increment (e.g., 10 → 10)
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
-echo "New Release: $NEW_VERSION"
+PREVIOUS_VERSION="${LATEST_TAG:-None}"
 
-# Fetch merged PRs
-PRS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed")
+echo "New release to publish: $NEW_VERSION"
+echo "Previous release: $PREVIOUS_VERSION"
 
-# Initialize categories
-FEAT_COMMITS=()
-FIX_COMMITS=()
-DOCS_COMMITS=()
-TEST_COMMITS=()
-CICD_COMMITS=()
-TASK_COMMITS=()
-OTHER_COMMITS=()
+# Step 2: Check PR title and categorize commits based on PR title
+# Fetch the PR title (we are assuming the PR is merged after squashing commits)
+PR_TITLE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed" | jq -r '.[0].title')
 
-# Process each PR
-for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); do
-  PR_JSON=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR")
+# Check if PR title matches required format
+if [[ "$PR_TITLE" =~ ^(feat|fix|docs|test|ci|cd|task): ]]; then
+  COMMIT_TYPE=$(echo "$PR_TITLE" | awk -F ':' '{print $1}')
+else
+  echo "Error: PR title does not match required format."
+  exit 1
+fi
 
-  PR_TITLE=$(echo "$PR_JSON" | jq -r '.title')
-  PR_AUTHOR=$(echo "$PR_JSON" | jq -r '.user.login')
+# Step 3: Get the squash commit (single commit from squashed PR)
+# This is the commit that will be used for the release
+SQUASH_COMMIT_HASH=$(git log -n 1 --pretty=format:"%H")
 
-  # Fetch the merge commit (squash & merge)
-  MAIN_COMMIT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/merge" | jq -r '.sha')
+# Fetch the commit message of the squash commit
+SQUASH_COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%s" "$SQUASH_COMMIT_HASH")
+SQUASH_COMMIT_AUTHOR=$(git log -n 1 --pretty=format:"%aN")
 
-  SHORT_COMMIT=${MAIN_COMMIT:0:7} # Extract short commit hash
-
-  # Format entry with squash and merge commit ID in the required format
-  ENTRY="feat: ${PR_TITLE} (${SHORT_COMMIT}) (#$PR)"
-  # Categorize commits
-  if [[ "$PR_TITLE" =~ ^feat: ]]; then
-    FEAT_COMMITS+=("$ENTRY")
-  elif [[ "$PR_TITLE" =~ ^fix: ]]; then
-    FIX_COMMITS+=("$ENTRY")
-  elif [[ "$PR_TITLE" =~ ^docs: ]]; then
-    DOCS_COMMITS+=("$ENTRY")
-  elif [[ "$PR_TITLE" =~ ^test: ]]; then
-    TEST_COMMITS+=("$ENTRY")
-  elif [[ "$PR_TITLE" =~ ^ci|cd: ]]; then
-    CICD_COMMITS+=("$ENTRY")
-  elif [[ "$PR_TITLE" =~ ^task: ]]; then
-    TASK_COMMITS+=("$ENTRY")
-  else
-    OTHER_COMMITS+=("$ENTRY")
-  fi
-done
-
-# Generate release notes
+# Step 4: Generate release notes
 RELEASE_NOTES="### What's Changed\n"
-RELEASE_NOTES="$RELEASE_NOTES\n## New Release: $NEW_VERSION\n"
+RELEASE_NOTES="$RELEASE_NOTES\n#### Previous Release: $PREVIOUS_VERSION ---> New Release: $NEW_VERSION\n"
 
-generate_section() {
-  local TITLE="$1"
-  local COMMITS=("${!2}")
+# Categorize commits based on type (feat, fix, docs, task, ci/cd, test)
+case "$COMMIT_TYPE" in
+"feat")
+  CATEGORY="Features"
+  ;;
+"fix")
+  CATEGORY="Bug fixes"
+  ;;
+"docs")
+  CATEGORY="Documentation"
+  ;;
+"task")
+  CATEGORY="Tasks"
+  ;;
+"ci" | "cd")
+  CATEGORY="CI/CD"
+  ;;
+"test")
+  CATEGORY="Tests"
+  ;;
+*)
+  CATEGORY="Other"
+  ;;
+esac
 
-  if [ ${#COMMITS[@]} -gt 0 ]; then
-    RELEASE_NOTES="$RELEASE_NOTES\n### $TITLE\n"
-    for COMMIT in "${COMMITS[@]}"; do
-      RELEASE_NOTES="$RELEASE_NOTES\n- $COMMIT"
-    done
-  fi
-}
+# Append the squash commit message
+RELEASE_NOTES="$RELEASE_NOTES\n#### $CATEGORY\n- [$SQUASH_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH): $SQUASH_COMMIT_MESSAGE (#$PR_TITLE) (@$SQUASH_COMMIT_AUTHOR)"
 
-generate_section "Features ✨" FEAT_COMMITS[@]
-generate_section "Bug Fixes 🐛" FIX_COMMITS[@]
-generate_section "Documentation 📖" DOCS_COMMITS[@]
-generate_section "Testing 🧪" TEST_COMMITS[@]
-generate_section "CI/CD ⚙️" CICD_COMMITS[@]
-generate_section "Tasks ✅" TASK_COMMITS[@]
-generate_section "Other Changes" OTHER_COMMITS[@]
+# Add the Full Changelog comparison link
+if [ "$PREVIOUS_VERSION" != "None" ]; then
+  FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_VERSION...$NEW_VERSION"
+  RELEASE_NOTES="$RELEASE_NOTES\n\n#### Full Changelog: [$PREVIOUS_VERSION...$NEW_VERSION]($FULL_CHANGELOG_LINK)"
+else
+  RELEASE_NOTES="$RELEASE_NOTES\n\n#### Full Changelog\nNo previous version found for diff comparison."
+fi
 
-# Save to file
-echo -e "$RELEASE_NOTES" >CHANGELOG.md
+# Output release notes
+echo -e "$RELEASE_NOTES"
 
-# Commit and push changes
-git add CHANGELOG.md
-git commit -m "Update CHANGELOG.md for release $NEW_VERSION"
-git push origin main
+# Step 5: Create or update the CHANGELOG.md with the new release notes at the top
+echo -e "$RELEASE_NOTES\n$(cat changelog.md)" >changelog.md
 
-# Tag and push
-git tag "$NEW_VERSION"
-git push origin "$NEW_VERSION"
+# Add changelog.md to git, commit and push changes
+git add changelog.md
+git commit -m "Update changelog for $NEW_VERSION release"
+git push origin main # Change 'main' to your branch name if it's different
 
-# Create GitHub release
-curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
-  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\", \"draft\": false, \"prerelease\": false}" \
+# Step 6: Create the release on GitHub
+curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
-echo "Release published: $NEW_VERSION"
+echo "Release notes generated, changelog updated, and release created successfully."

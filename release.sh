@@ -169,4 +169,24 @@ fi
 # Output the release notes to a file
 echo "$RELEASE_NOTES" >CHANGELOG.md
 
-echo "Release notes generated and saved to CHANGELOG.md"
+# Step 4: Commit and push the changelog file
+git add CHANGELOG.md
+git commit -m "Update changelog for $NEW_VERSION"
+git push origin HEAD
+
+# Step 5: Create a new tag
+git tag $NEW_VERSION
+git push origin $NEW_VERSION
+
+# Step 6: Create a GitHub release
+RELEASE_DATA=$(jq -n \
+  --arg tag_name "$NEW_VERSION" \
+  --arg name "$NEW_VERSION" \
+  --arg body "$RELEASE_NOTES" \
+  '{tag_name: $tag_name, name: $name, body: $body}')
+
+curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
+  -d "$RELEASE_DATA" \
+  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
+
+echo "Release created: $NEW_VERSION"

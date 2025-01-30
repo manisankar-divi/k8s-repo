@@ -2,6 +2,7 @@
 
 # Exit on errors
 set -e
+set -x
 
 # Ensure environment variables are set
 if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ] || [ -z "$GITHUB_TOKEN" ]; then
@@ -56,8 +57,14 @@ for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); d
   PR_COMMITS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
     "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/commits" | jq -r '.[].sha')
 
-  # Format entry (remove extra commit IDs and references)
-  ENTRY="$SHORT_COMMIT: $PR_TITLE (#$PR)"
+  CHERRY_PICKED=$(echo "$PR_COMMITS" | grep -Eo '[0-9a-f]{7}' | paste -sd ',' -)
+
+  # Format entry
+  ENTRY="$SHORT_COMMIT: $PR_TITLE"
+  if [ -n "$CHERRY_PICKED" ]; then
+    ENTRY="$ENTRY (cherry-pick $CHERRY_PICKED)"
+  fi
+
   # Categorize commits
   if [[ "$PR_TITLE" =~ ^feat: ]]; then
     FEAT_COMMITS+=("$ENTRY")

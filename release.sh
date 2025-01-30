@@ -71,12 +71,12 @@ CLEAN_COMMIT_MESSAGE=$(echo "$SQUASH_COMMIT_MESSAGE" | sed 's/ (.*)//g')
 SHORT_COMMIT_HASH=$(echo "$SQUASH_COMMIT_HASH" | cut -c1-7)
 
 # Step 4: Generate release notes with emojis
-RELEASE_NOTES="### 🚀 What's Changed\n"
+RELEASE_NOTES="🚀 **What's Changed** \n"
 RELEASE_NOTES="$RELEASE_NOTES\n🔄 **Previous Release:** $PREVIOUS_VERSION ➝ **New Release:** $NEW_VERSION\n"
 
 # Categorize commits based on type
 case "$COMMIT_TYPE" in
-"feat") CATEGORY="✨ Features" ;;
+"feat") CATEGORY="✨ Features✨" ;;
 "fix") CATEGORY="🐛 Bug Fixes" ;;
 "docs") CATEGORY="📝 Documentation" ;;
 "task") CATEGORY="📌 Tasks" ;;
@@ -86,7 +86,7 @@ case "$COMMIT_TYPE" in
 esac
 
 # Append commit message with emojis
-RELEASE_NOTES="$RELEASE_NOTES\n### $CATEGORY\n- **[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH)**: $CLEAN_COMMIT_MESSAGE"
+RELEASE_NOTES="$RELEASE_NOTES\n **$CATEGORY** \n- **[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH)**: $CLEAN_COMMIT_MESSAGE"
 
 # Add Full Changelog link
 if [ "$PREVIOUS_VERSION" != "None" ]; then

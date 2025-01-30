@@ -1,3 +1,11 @@
+### What's Changed
+
+#### Previous Release: v25.1.30.12 ---> New Release: v25.1.30.13
+
+#### Bug fixes
+- [6c131ca](https://github.com/manisankar-divi/k8s-repo/commit/6c131cab085a5e15a6bcbab3c9abab273aef2abb): fix: Dev
+
+#### Full Changelog: [v25.1.30.12...v25.1.30.13](https://github.com/manisankar-divi/k8s-repo/compare/v25.1.30.12...v25.1.30.13)
 
 ### What's Changed
 

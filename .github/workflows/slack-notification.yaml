@@ -42,14 +42,14 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Information:*\n${{ github.event.release.body }}"
+                  "text": "*Information:*\n\n${{ github.event.release.body }}"
                 }
               },
               {
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "Release URL: ${{ github.event.release.html_url }}"
+                  "text": "*Release URL:* \n${{ github.event.release.html_url }}"
                 }
               }
             ]

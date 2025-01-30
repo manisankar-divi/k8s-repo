@@ -1,62 +1,55 @@
----
 name: ReleaseNotice
+
 on:
   release:
     types:
       - published
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Dump Github context
+      - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
         run: echo "$GITHUB_CONTEXT"
-      - name: Slack Notification on SUCCESS
+
+      - name: Slack Notification on Release
         if: success()
         uses: tokorom/action-slack-incoming-webhook@main
         env:
           INCOMING_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
-          text: A release is published.
+          text: "A new release is published"
           blocks: |
             [
               {
                 "type": "header",
                 "text": {
                   "type": "plain_text",
-                  "text": "${{ github.event.release.tag_name}} is Released!"
-                  "text": "Release ${{
-                      github.event.release.tag_name
-                    }} is Released!"
+                  "text": "Release ${{ github.event.release.tag_name }} is Released!"
                 }
               },
               {
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Author:*\n${{ github.actor }}"
+                  "text": "*Author:* \n${{ github.actor }}"
                 }
               },
               {
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Information:*"
+                  "text": "*Information:*\n${{ github.event.release.body }}"
                 }
               },
               {
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "${{ toJSON(github.event.release.body) }}"
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "${{ github.event.release.html_url }}"
+                  "text": "Release URL: ${{ github.event.release.html_url }}"
                 }
               }
             ]

@@ -2,6 +2,7 @@
 
 # Exit on errors
 set -e
+set -x
 
 # Ensure environment variables are set
 if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ] || [ -z "$GITHUB_TOKEN" ]; then
@@ -48,16 +49,15 @@ for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); d
   PR_TITLE=$(echo "$PR_JSON" | jq -r '.title')
   PR_AUTHOR=$(echo "$PR_JSON" | jq -r '.user.login')
 
+  # Fetch the merge commit (squash & merge)
   MAIN_COMMIT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
     "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/merge" | jq -r '.sha')
 
   SHORT_COMMIT=${MAIN_COMMIT:0:7} # Extract short commit hash
 
-  PR_COMMITS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/commits" | jq -r '.[].sha')
+  # Format entry
+  ENTRY="$SHORT_COMMIT: $PR_TITLE (#$PR) (@$PR_AUTHOR)"
 
-  # Format entry (remove extra commit IDs and references)
-  ENTRY="$SHORT_COMMIT: $PR_TITLE (#$PR)"
   # Categorize commits
   if [[ "$PR_TITLE" =~ ^feat: ]]; then
     FEAT_COMMITS+=("$ENTRY")

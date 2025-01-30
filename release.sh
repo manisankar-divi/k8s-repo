@@ -167,26 +167,22 @@ if [ ${#OTHER_COMMITS[@]} -gt 0 ]; then
 fi
 
 # Output the release notes to a file
-echo "$RELEASE_NOTES" >CHANGELOG.md
+echo -e "$RELEASE_NOTES" >CHANGELOG.md
 
-# Step 4: Commit and push the changelog file
+# Step 4: Add, commit, and push CHANGELOG.md
 git add CHANGELOG.md
-git commit -m "Update changelog for $NEW_VERSION"
-git push origin HEAD
+git commit -m "Update CHANGELOG.md for release $NEW_VERSION"
+git push origin main # or your default branch name
 
-# Step 5: Create a new tag
-git tag $NEW_VERSION
-git push origin $NEW_VERSION
+# Step 5: Create a new tag and push it to GitHub
+git tag "$NEW_VERSION"
+git push origin "$NEW_VERSION"
 
-# Step 6: Create a GitHub release
-RELEASE_DATA=$(jq -n \
-  --arg tag_name "$NEW_VERSION" \
-  --arg name "$NEW_VERSION" \
-  --arg body "$RELEASE_NOTES" \
-  '{tag_name: $tag_name, name: $name, body: $body}')
-
+# Step 6: Create a GitHub release and associate it with the tag
+RELEASE_BODY="$RELEASE_NOTES"
 curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
-  -d "$RELEASE_DATA" \
+  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_BODY\", \"draft\": false, \"prerelease\": false}" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
-echo "Release created: $NEW_VERSION"
+echo "Release notes generated, saved to CHANGELOG.md, committed, and release published: $NEW_VERSION"
+

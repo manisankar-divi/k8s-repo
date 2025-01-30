@@ -91,9 +91,9 @@ RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://gi
 # Add Full Changelog link
 if [ "$PREVIOUS_VERSION" != "None" ]; then
   FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_VERSION...$NEW_VERSION"
-  RELEASE_NOTES="$RELEASE_NOTES\n\n📜 *Full Changelog:* [$PREVIOUS_VERSION...$NEW_VERSION]($FULL_CHANGELOG_LINK)"
+  RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$PREVIOUS_VERSION...$NEW_VERSION]($FULL_CHANGELOG_LINK)"
 else
-  RELEASE_NOTES="$RELEASE_NOTES\n\n📜 *Full Changelog:* No previous version found for diff comparison."
+  RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* No previous version found for diff comparison."
 fi
 
 # Output release notes

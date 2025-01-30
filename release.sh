@@ -23,14 +23,20 @@ YEAR=$(date +'%y')   # Last two digits (e.g., 25 for 2025)
 MONTH=$(date +'%-m') # Remove leading zeros (e.g., 1 for January)
 DAY=$(date +'%-d')   # Remove leading zeros (e.g., 5 for 5th)
 
-# Fetch tags and find the latest increment for the day
+# Fetch tags and find the latest increment for the current day
 git fetch --tags
-LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" --sort=-version:refname | head -n 1)
 
-# Extract the incremental part (pad with leading zeros for sorting)
+# Get all tags of the form v<year>.<month>.<day>.<increment> (e.g., v25.1.30.9)
+LATEST_TAGS=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" --sort=-version:refname)
+
+# Get the highest increment by sorting the tags naturally
+LATEST_TAG=$(echo "$LATEST_TAGS" | sort -V | tail -n 1)
+
+# Extract the incremental part (e.g., 9 from v25.1.30.9)
 if [ -z "$LATEST_TAG" ]; then
   NEXT_INCREMENT=1
 else
+  # Extract the increment from the latest tag
   LATEST_INCREMENT=$(echo "$LATEST_TAG" | awk -F'.' '{print $NF}')
   NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
 fi
@@ -62,6 +68,14 @@ SQUASH_COMMIT_HASH=$(git log -n 1 --pretty=format:"%H")
 # Fetch the commit message of the squash commit
 SQUASH_COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%s" "$SQUASH_COMMIT_HASH")
 SQUASH_COMMIT_AUTHOR=$(git log -n 1 --pretty=format:"%aN")
+
+# Clean the commit message: remove (#feat: Dev) and (@manisankar-divi)
+CLEAN_COMMIT_MESSAGE=$(echo "$SQUASH_COMMIT_MESSAGE" | sed 's/ (.*)//g')
+
+# Shorten the commit hash to 7 characters
+SHORT_COMMIT_HASH=$(echo "$SQUASH_COMMIT_HASH" | cut -c1-7)
+
+# Step 4: Generate release notes
 RELEASE_NOTES="### What's Changed\n"
 RELEASE_NOTES="$RELEASE_NOTES\n#### Previous Release: $PREVIOUS_VERSION ---> New Release: $NEW_VERSION\n"
 
@@ -91,7 +105,7 @@ case "$COMMIT_TYPE" in
 esac
 
 # Append the squash commit message
-RELEASE_NOTES="$RELEASE_NOTES\n#### $CATEGORY\n- [$SQUASH_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH): $SQUASH_COMMIT_MESSAGE (#$PR_TITLE) (@$SQUASH_COMMIT_AUTHOR)"
+RELEASE_NOTES="$RELEASE_NOTES\n#### $CATEGORY\n- [$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH): $CLEAN_COMMIT_MESSAGE"
 
 # Add the Full Changelog comparison link
 if [ "$PREVIOUS_VERSION" != "None" ]; then
@@ -105,7 +119,7 @@ fi
 echo -e "$RELEASE_NOTES"
 
 # Step 5: Create or update the CHANGELOG.md with the new release notes at the top
-echo -e "$RELEASE_NOTES\n$(cat changelog.md)" >changelog.md
+echo -e "$RELEASE_NOTES\n$(cat changelog.md)" > changelog.md
 
 # Add changelog.md to git, commit and push changes
 git add changelog.md

@@ -42,7 +42,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Information:*\n\n${{ github.event.release.body }}"
+                  "text": "*Information:*\n\${{ github.event.release.body }}"
                 }
               },
               {

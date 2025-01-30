@@ -119,7 +119,7 @@ fi
 echo -e "$RELEASE_NOTES"
 
 # Step 5: Create or update the CHANGELOG.md with the new release notes at the top
-echo -e "$RELEASE_NOTES\n$(cat changelog.md)" >changelog.md
+echo -e "$RELEASE_NOTES\n$(cat changelog.md)" > changelog.md
 
 # Add changelog.md to git, commit and push changes
 git add changelog.md

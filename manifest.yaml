@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-deploy
+  labels:
+    app: go-app
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: go-app
+  template:
+    metadata:
+      labels:
+        app: go-app
+    spec:
+      containers:
+        - name: myapp-container
+          image: manisankardivi/new:6.0.104
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: go-app
+  name: go-svc
+spec:
+  selector:
+    app: go-app
+  ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 80

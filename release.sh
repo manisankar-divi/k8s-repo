@@ -71,7 +71,7 @@ CLEAN_COMMIT_MESSAGE=$(echo "$SQUASH_COMMIT_MESSAGE" | sed 's/ (.*)//g')
 SHORT_COMMIT_HASH=$(echo "$SQUASH_COMMIT_HASH" | cut -c1-7)
 
 # Step 4: Generate release notes with emojis
-RELEASE_NOTES="🚀 *What's Changed* \n"
+RELEASE_NOTES="🚀 *What's Changed* \n\n"
 RELEASE_NOTES="$RELEASE_NOTES\n\n 🔄 *Previous Release:* $PREVIOUS_VERSION ➝ *New Release:* $NEW_VERSION\n"
 
 # Categorize commits based on type

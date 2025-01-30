@@ -50,7 +50,7 @@ FEAT_COMMITS=()
 FIX_COMMITS=()
 DOCS_COMMITS=()
 TEST_COMMITS=()
-CICD_COMMITS=() # Renamed from CI/CD_COMMITS to CICD_COMMITS
+CICD_COMMITS=()
 TASK_COMMITS=()
 OTHER_COMMITS=()
 
@@ -60,11 +60,11 @@ for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); d
   PR_TITLE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
     "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR" | jq -r '.title')
 
-  # Get the commits for the PR
-  COMMITS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/commits")
+  # Get the commit for the PR (this is the squashed commit)
+  COMMIT_HASH=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/merge" | jq -r '.sha')
 
-  # Determine the commit type from PR title
+  # Determine the commit type from PR title and categorize
   if [[ "$PR_TITLE" =~ ^feat: ]]; then
     CATEGORY="Features ✨"
     COMMIT_LIST=FEAT_COMMITS
@@ -88,35 +88,22 @@ for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); d
     COMMIT_LIST=OTHER_COMMITS
   fi
 
-  # Loop through each commit and add it to the respective category
-  for COMMIT in $(echo "$COMMITS" | jq -r '.[] | {sha: .sha, message: .commit.message} | @base64'); do
-    _jq() {
-      echo ${COMMIT} | base64 --decode | jq -r ${1}
-    }
-
-    COMMIT_HASH=$(_jq '.sha')
-    COMMIT_MESSAGE=$(_jq '.message')
-
-    # Shorten the commit ID to the first 7 characters
-    SHORT_COMMIT_HASH=$(echo "$COMMIT_HASH" | cut -c1-7)
-
-    # Append commit to the respective category list using correct syntax
-    if [ "$COMMIT_LIST" == "FEAT_COMMITS" ]; then
-      FEAT_COMMITS+=("$SHORT_COMMIT_HASH: $COMMIT_MESSAGE")
-    elif [ "$COMMIT_LIST" == "FIX_COMMITS" ]; then
-      FIX_COMMITS+=("$SHORT_COMMIT_HASH: $COMMIT_MESSAGE")
-    elif [ "$COMMIT_LIST" == "DOCS_COMMITS" ]; then
-      DOCS_COMMITS+=("$SHORT_COMMIT_HASH: $COMMIT_MESSAGE")
-    elif [ "$COMMIT_LIST" == "TEST_COMMITS" ]; then
-      TEST_COMMITS+=("$SHORT_COMMIT_HASH: $COMMIT_MESSAGE")
-    elif [ "$COMMIT_LIST" == "CICD_COMMITS" ]; then
-      CICD_COMMITS+=("$SHORT_COMMIT_HASH: $COMMIT_MESSAGE")
-    elif [ "$COMMIT_LIST" == "TASK_COMMITS" ]; then
-      TASK_COMMITS+=("$SHORT_COMMIT_HASH: $COMMIT_MESSAGE")
-    else
-      OTHER_COMMITS+=("$SHORT_COMMIT_HASH: $COMMIT_MESSAGE")
-    fi
-  done
+  # Add the squashed commit to the respective list with the PR title
+  if [ "$COMMIT_LIST" == "FEAT_COMMITS" ]; then
+    FEAT_COMMITS+=("$COMMIT_HASH: $PR_TITLE")
+  elif [ "$COMMIT_LIST" == "FIX_COMMITS" ]; then
+    FIX_COMMITS+=("$COMMIT_HASH: $PR_TITLE")
+  elif [ "$COMMIT_LIST" == "DOCS_COMMITS" ]; then
+    DOCS_COMMITS+=("$COMMIT_HASH: $PR_TITLE")
+  elif [ "$COMMIT_LIST" == "TEST_COMMITS" ]; then
+    TEST_COMMITS+=("$COMMIT_HASH: $PR_TITLE")
+  elif [ "$COMMIT_LIST" == "CICD_COMMITS" ]; then
+    CICD_COMMITS+=("$COMMIT_HASH: $PR_TITLE")
+  elif [ "$COMMIT_LIST" == "TASK_COMMITS" ]; then
+    TASK_COMMITS+=("$COMMIT_HASH: $PR_TITLE")
+  else
+    OTHER_COMMITS+=("$COMMIT_HASH: $PR_TITLE")
+  fi
 done
 
 # Step 3: Generate release notes
@@ -179,24 +166,7 @@ if [ ${#OTHER_COMMITS[@]} -gt 0 ]; then
   done
 fi
 
-# Add the Full Changelog comparison link
-FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$NEW_VERSION"
-RELEASE_NOTES="$RELEASE_NOTES\n\n#### Full Changelog: [$NEW_VERSION]($FULL_CHANGELOG_LINK)"
+# Output the release notes to a file
+echo "$RELEASE_NOTES" >CHANGELOG.md
 
-# Output release notes
-echo -e "$RELEASE_NOTES"
-
-# Step 4: Create or update the CHANGELOG.md with the new release notes at the top
-echo -e "$RELEASE_NOTES\n$(cat changelog.md)" >changelog.md
-
-# Add changelog.md to git, commit and push changes
-git add changelog.md
-git commit -m "Update changelog for $NEW_VERSION release"
-git push origin main # Change 'main' to your branch name if it's different
-
-# Step 5: Create the release on GitHub
-curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
-  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
-
-echo "Release notes generated, changelog updated, and release created successfully."
+echo "Release notes generated and saved to CHANGELOG.md"

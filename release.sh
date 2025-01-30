@@ -62,8 +62,6 @@ SQUASH_COMMIT_HASH=$(git log -n 1 --pretty=format:"%H")
 # Fetch the commit message of the squash commit
 SQUASH_COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%s" "$SQUASH_COMMIT_HASH")
 SQUASH_COMMIT_AUTHOR=$(git log -n 1 --pretty=format:"%aN")
-
-# Step 4: Generate release notes
 RELEASE_NOTES="### What's Changed\n"
 RELEASE_NOTES="$RELEASE_NOTES\n#### Previous Release: $PREVIOUS_VERSION ---> New Release: $NEW_VERSION\n"
 

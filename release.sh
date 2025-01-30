@@ -185,3 +185,4 @@ curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
 echo "Release notes generated, saved to CHANGELOG.md, committed, and release published: $NEW_VERSION"
+

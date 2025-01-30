@@ -54,7 +54,7 @@ for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); d
     "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/merge" | jq -r '.sha')
 
   SHORT_COMMIT=${MAIN_COMMIT:0:7} # Extract short commit hash
-  
+
   # Format entry with squash and merge commit ID in the required format
   ENTRY="feat: ${PR_TITLE} (${SHORT_COMMIT}) (#$PR)"
   # Categorize commits

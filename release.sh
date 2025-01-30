@@ -47,7 +47,6 @@ for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); d
     "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR")
 
   PR_TITLE=$(echo "$PR_JSON" | jq -r '.title')
-  PR_AUTHOR=$(echo "$PR_JSON" | jq -r '.user.login')
 
   MAIN_COMMIT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
     "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/merge" | jq -r '.sha')
@@ -57,13 +56,8 @@ for PR in $(echo "$PRS" | jq -r '.[] | select(.merged_at != null) | .number'); d
   PR_COMMITS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
     "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls/$PR/commits" | jq -r '.[].sha')
 
-  CHERRY_PICKED=$(echo "$PR_COMMITS" | grep -Eo '[0-9a-f]{7}' | paste -sd ',' -)
-
-  # Format entry
-  ENTRY="$SHORT_COMMIT: $PR_TITLE (#$PR) (@$PR_AUTHOR)"
-  if [ -n "$CHERRY_PICKED" ]; then
-    ENTRY="$ENTRY (cherry-pick $CHERRY_PICKED)"
-  fi
+  # Format entry (remove extra commit IDs and references)
+  ENTRY="$SHORT_COMMIT: $PR_TITLE (#$PR)"
 
   # Categorize commits
   if [[ "$PR_TITLE" =~ ^feat: ]]; then
@@ -125,4 +119,3 @@ curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
 echo "Release published: $NEW_VERSION"
-

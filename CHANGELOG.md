@@ -1,9 +1,10 @@
 ### What's Changed
 
-## New Release: v25.1.30.9
+## New Release: v25.1.30.10
 
 ### Features ✨
 
+- feat: feat: done () (#14)
 - feat: feat:  devleoped by mani () (#13)
 - feat: feat: Dev () (#12)
 - feat: feat: updated () (#11)

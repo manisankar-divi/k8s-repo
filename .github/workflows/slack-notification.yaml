@@ -15,14 +15,6 @@ jobs:
         run: |
           # Extract and process the release body to replace markdown headers with newlines and add proper formatting
           PROCESSED_BODY=$(echo "${{ github.event.release.body }}" | sed -E 's/### (.*)/\n*\\1*:/g; s/## (.*)/\n*\\1*:/g; s/^-\s*/- /g')
-<<<<<<< HEAD
-=======
-
-          # Use printf to avoid issues with multi-line strings
-          echo "processed_body<<EOF" >> $GITHUB_OUTPUT
-          printf "%s" "$PROCESSED_BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
->>>>>>> main
 
           # Output the processed body to GITHUB_ENV for use in subsequent steps
           echo "processed_body=$PROCESSED_BODY" >> $GITHUB_ENV
@@ -63,11 +55,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-<<<<<<< HEAD
                   "text": "*Release Notes:*\n${{ env.processed_body }}"
-=======
-                  "text": "*Release Notes:*\n${{ steps.process-body.outputs.processed_body }}"
->>>>>>> main
                 }
               },
               {

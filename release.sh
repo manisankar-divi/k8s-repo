@@ -103,3 +103,4 @@ curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
 echo "✅ Release notes generated and release created successfully!"
+##

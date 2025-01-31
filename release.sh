@@ -106,7 +106,11 @@ fi
 # Output release notes
 echo -e "$RELEASE_NOTES"
 
-# Step 6: Create GitHub Release
+# Step 5: Create GitHub Release
+# curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+#   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
+#   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
+
 curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"

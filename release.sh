@@ -69,7 +69,7 @@ CLEAN_COMMIT_MESSAGE=$(echo "$SQUASH_COMMIT_MESSAGE" | sed 's/ (.*)//g')
 SHORT_COMMIT_HASH=$(echo "$SQUASH_COMMIT_HASH" | cut -c1-7)
 
 # Step 4: Generate release notes with emojis
-RELEASE_NOTES="🚀 *What's Changed* \n"
+RELEASE_NOTES="*What's Changed* 🚀\n"
 RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
 
 # Categorize commits based on type
@@ -88,7 +88,7 @@ RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://gi
 
 # Add Full Changelog link
 FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$LATEST_TAGS...$NEW_VERSION"
-RELEASE_NOTES="$RELEASE_NOTES\n\n📜 *Full Changelog:* [$LATEST_TAGS...$NEW_VERSION]($FULL_CHANGELOG_LINK)"
+RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$LATEST_TAGS...$NEW_VERSION]($FULL_CHANGELOG_LINK)"
 
 # Output release notes
 echo -e "$RELEASE_NOTES"

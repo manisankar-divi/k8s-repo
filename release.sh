@@ -93,15 +93,7 @@ RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$LATEST_TAGS...$NEW_VERSI
 # Output release notes
 echo -e "$RELEASE_NOTES"
 
-# Step 5: Update CHANGELOG.md
-echo -e "$RELEASE_NOTES\n$(cat changelog.md)" >changelog.md
-
-# Commit and push changelog update
-git add changelog.md
-git commit -m "📜 Update changelog for $NEW_VERSION release"
-git push origin main # Change 'main' to your branch name if different
-
-# Step 6: Create GitHub Release
+# Step 5: Create GitHub Release
 # curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
 #   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
 #   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
@@ -110,4 +102,5 @@ curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \" 🚀 *What's Changed*\n\n🔄 *New Release:* $NEW_VERSION\n\n🐛 *Bug Fixes*\n- [$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH): $CLEAN_COMMIT_MESSAGE\n\n📜 *Full Changelog:* [$PREVIOUS_VERSION...$NEW_VERSION](https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_VERSION...$NEW_VERSION)\"}" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
-echo "✅ Release notes generated, changelog updated, and release created successfully!"
+echo "✅ Release notes generated and release created successfully!"
+##

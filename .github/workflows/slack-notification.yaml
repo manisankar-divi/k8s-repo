@@ -1,4 +1,5 @@
 name: Release Notification
+
 on:
   release:
     types: [published]
@@ -6,24 +7,25 @@ on:
 jobs:
   notify-slack:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Process the release body to add newlines and format headers
       - name: Process release body
         id: process-body
         run: |
-          # Replace markdown headers and add newlines
+          # Extract and process the release body to replace markdown headers with newlines and add proper formatting
           PROCESSED_BODY=$(echo "${{ github.event.release.body }}" | sed -E 's/### (.*)/\n*\\1*:/g; s/## (.*)/\n*\\1*:/g; s/^-\s*/- /g')
 
-          # Use printf to avoid issues with multi-line strings
-          echo "processed_body<<EOF" >> $GITHUB_OUTPUT
-          printf "%s" "$PROCESSED_BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Output the processed body to GITHUB_ENV for use in subsequent steps
+          echo "processed_body=$PROCESSED_BODY" >> $GITHUB_ENV
 
+      # Step 2: Send a Slack notification with the release details
       - name: Send Slack Notification
         uses: tokorom/action-slack-incoming-webhook@main
         env:
           INCOMING_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
-          text: "A release is published: ${{ github.event.release.tag_name }}"
+          text: "A new release is published: ${{ github.event.release.tag_name }}"
           blocks: |
             [
               {
@@ -53,7 +55,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Release Notes:*\n${{ steps.process-body.outputs.processed_body }}"
+                  "text": "*Release Notes:*\n${{ env.processed_body }}"
                 }
               },
               {

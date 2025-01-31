@@ -23,7 +23,7 @@ YEAR=$(date +'%y')   # Last two digits (e.g., 25 for 2025)
 MONTH=$(date +'%-m') # Remove leading zeros (e.g., 1 for January)
 DAY=$(date +'%-d')   # Remove leading zeros (e.g., 5 for 5th)
 
-# Fetch tags and find the latest increment for the current day
+# Fetch all tags from the remote repository to ensure they're available locally
 git fetch --tags
 
 # Get all tags of the form v<year>.<month>.<day>.<increment> (e.g., v25.1.31.9)
@@ -43,8 +43,14 @@ NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 
 echo "New release to publish: $NEW_VERSION"
 
-# Step 2: Fetch the commits for the current release
-COMMITS=$(git log "$LATEST_TAGS".."$NEW_VERSION" --oneline)
+# Step 2: Fetch the commits for the current release (make sure you use valid commit ranges)
+# Ensure that both the previous tag and the new tag exist
+if git rev-parse "$LATEST_TAGS" >/dev/null 2>&1 && git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
+  COMMITS=$(git log "$LATEST_TAGS".."$NEW_VERSION" --oneline)
+else
+  echo "Error: One of the tags $LATEST_TAGS or $NEW_VERSION does not exist in the repository."
+  exit 1
+fi
 
 # Check if there are any commits (this would be the case for a new release)
 if [ -z "$COMMITS" ]; then
@@ -75,9 +81,6 @@ esac
 
 # Append commit message with emojis
 RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n$FULL_CHANGELOG\n"
-
-# Add Full Changelog link (no longer needed, we're listing the changes directly)
-# RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$NEW_VERSION](https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/$NEW_VERSION)"
 
 # Output release notes
 echo -e "$RELEASE_NOTES"

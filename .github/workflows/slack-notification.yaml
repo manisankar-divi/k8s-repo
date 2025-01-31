@@ -7,7 +7,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # To check the github context
       - name: Dump Github context
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}

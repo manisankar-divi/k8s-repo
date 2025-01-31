@@ -42,15 +42,22 @@ echo "New release version: $NEW_VERSION"
 
 # Step 2: Fetch the previous release tag to use in changelog link
 PREVIOUS_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n 2 | head -n 1)
+# Step 2: Fetch the previous release tag (last release from any day)
+PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
+
 if [ -z "$PREVIOUS_TAG" ]; then
-  # No previous release found, skip changelog diff
+  # No previous release found in entire history
   FULL_CHANGELOG_LINK="No previous version found for diff comparison."
 else
-  FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
+  # Verify previous tag is actually older than new version
+  if git merge-base --is-ancestor "$PREVIOUS_TAG" "$NEW_VERSION"; then
+    FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
+  else
+    FULL_CHANGELOG_LINK="Invalid version sequence - previous tag is not ancestor"
+  fi
 fi
 
 echo "$PREVIOUS_TAG"
-
 # Step 3: Fetch the latest closed PR and categorize commits based on PR title
 PR_TITLE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed" | jq -r '.[0].title')

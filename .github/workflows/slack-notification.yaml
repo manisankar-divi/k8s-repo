@@ -1,55 +1,53 @@
 name: ReleaseNotice
-
 on:
   release:
-    types:
-      - published
+    types: [published]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Dump GitHub context
+      # To check the github context
+      - name: Dump Github context
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
         run: echo "$GITHUB_CONTEXT"
 
-      - name: Slack Notification on Release
+      - name: Slack Notification on SUCCESS
         if: success()
         uses: tokorom/action-slack-incoming-webhook@main
         env:
           INCOMING_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
-          text: "A new release is published"
+          text: A release is published.
           blocks: |
             [
               {
                 "type": "header",
                 "text": {
                   "type": "plain_text",
-                  "text": "Release ${{ github.event.release.tag_name }} is Released!"
+                  "text": "${{ github.event.release.tag_name}} is published!"
                 }
               },
               {
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Author:* \n${{ github.actor }}"
+                  "text": "*Author:*\n${{ github.actor }}"
                 }
               },
               {
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Information:*\n\${{ github.event.release.body }}"
+                  "text": "*Information:*"
                 }
               },
               {
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Release URL:* \n${{ github.event.release.html_url }}"
+                  "text": "${{ toJSON(github.event.release.body) }}"
                 }
-              }
+              },
             ]

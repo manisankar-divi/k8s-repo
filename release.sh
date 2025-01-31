@@ -43,7 +43,17 @@ NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 
 echo "New release to publish: $NEW_VERSION"
 
-# Step 2: Fetch the latest closed PR and categorize commits based on PR title
+# Step 2: Fetch the previous release tag to use in changelog link
+PREVIOUS_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n 2 | head -n 1)
+
+if [ -z "$PREVIOUS_TAG" ]; then
+  # No previous release found, skip changelog diff
+  FULL_CHANGELOG_LINK="No previous version found for diff comparison."
+else
+  FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
+fi
+
+# Step 3: Fetch the latest closed PR and categorize commits based on PR title
 PR_TITLE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed" | jq -r '.[0].title')
 
@@ -55,7 +65,7 @@ else
   exit 1
 fi
 
-# Step 3: Get the squash commit (single commit from squashed PR)
+# Step 4: Get the squash commit (single commit from squashed PR)
 SQUASH_COMMIT_HASH=$(git log -n 1 --pretty=format:"%H")
 
 # Fetch commit message
@@ -68,7 +78,7 @@ CLEAN_COMMIT_MESSAGE=$(echo "$SQUASH_COMMIT_MESSAGE" | sed 's/ (.*)//g')
 # Shorten commit hash
 SHORT_COMMIT_HASH=$(echo "$SQUASH_COMMIT_HASH" | cut -c1-7)
 
-# Step 4: Generate release notes with emojis
+# Step 5: Generate release notes with emojis
 RELEASE_NOTES="*What's Changed* 🚀\n"
 RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
 
@@ -86,9 +96,12 @@ esac
 # Append commit message with emojis
 RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH)*: $CLEAN_COMMIT_MESSAGE"
 
-# Add Full Changelog link
-FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$LATEST_TAGS...$NEW_VERSION"
-RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$LATEST_TAGS...$NEW_VERSION]($FULL_CHANGELOG_LINK)"
+# Add Full Changelog link (handle first release case)
+if [ "$FULL_CHANGELOG_LINK" != "No previous version found for diff comparison." ]; then
+  RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$PREVIOUS_TAG...$NEW_VERSION]($FULL_CHANGELOG_LINK)"
+else
+  RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* $FULL_CHANGELOG_LINK"
+fi
 
 # Output release notes
 echo -e "$RELEASE_NOTES"
@@ -99,8 +112,7 @@ echo -e "$RELEASE_NOTES"
 #   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
 curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
-  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \" 🚀 *What's Changed*\n\n🔄 *New Release:* $NEW_VERSION\n\n🐛 *Bug Fixes*\n- [$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH): $CLEAN_COMMIT_MESSAGE\n\n📜 *Full Changelog:* [$PREVIOUS_VERSION...$NEW_VERSION](https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_VERSION...$NEW_VERSION)\"}" \
+  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
 echo "✅ Release notes generated and release created successfully!"
-##

@@ -7,6 +7,15 @@ jobs:
   notify-slack:
     runs-on: ubuntu-latest
     steps:
+      - name: Process release body
+        id: process-body
+        run: |
+          # Replace markdown headers and add newlines
+          PROCESSED_BODY=$(echo '${{ github.event.release.body }}' | sed -E 's/### (.*)/\n*\\1*:/g; s/## (.*)/\n*\\1*:/g; s/^-\s*/- /g')
+          echo "processed_body<<EOF" >> $GITHUB_OUTPUT
+          echo "$PROCESSED_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Send Slack Notification
         uses: tokorom/action-slack-incoming-webhook@main
         env:
@@ -42,7 +51,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Release Notes:*\n${{ format('{0}', github.event.release.body) }}"
+                  "text": "*Release Notes:*\n${{ steps.process-body.outputs.processed_body }}"
                 }
               },
               {

@@ -23,7 +23,7 @@ YEAR=$(date +'%y')   # Last two digits (e.g., 25 for 2025)
 MONTH=$(date +'%-m') # Remove leading zeros (e.g., 1 for January)
 DAY=$(date +'%-d')   # Remove leading zeros (e.g., 5 for 5th)
 
-# Fetch all tags from the remote repository to ensure they're available locally
+# Fetch tags and find the latest increment for the current day
 git fetch --tags
 
 # Get all tags of the form v<year>.<month>.<day>.<increment> (e.g., v25.1.31.9)
@@ -43,28 +43,42 @@ NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 
 echo "New release to publish: $NEW_VERSION"
 
-# Step 2: Fetch the commits for the current release (make sure you use valid commit ranges)
-# Ensure that both the previous tag and the new tag exist
-if git rev-parse "$LATEST_TAGS" >/dev/null 2>&1 && git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
-  COMMITS=$(git log "$LATEST_TAGS".."$NEW_VERSION" --oneline)
+# Step 2: Fetch the previous release tag to use in changelog link
+PREVIOUS_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n 2 | head -n 1)
+
+if [ -z "$PREVIOUS_TAG" ]; then
+  # No previous release found, skip changelog diff
+  FULL_CHANGELOG_LINK="No previous version found for diff comparison."
 else
-  echo "Error: One of the tags $LATEST_TAGS or $NEW_VERSION does not exist in the repository."
+  FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
+fi
+
+# Step 3: Fetch the latest closed PR and categorize commits based on PR title
+PR_TITLE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed" | jq -r '.[0].title')
+
+# Check if PR title matches required format
+if [[ "$PR_TITLE" =~ ^(feat|fix|docs|test|ci|cd|task): ]]; then
+  COMMIT_TYPE=$(echo "$PR_TITLE" | awk -F ':' '{print $1}')
+else
+  echo "Error: PR title does not match required format."
   exit 1
 fi
 
-# Check if there are any commits (this would be the case for a new release)
-if [ -z "$COMMITS" ]; then
-  FULL_CHANGELOG="No changes in this release."
-else
-  # Format the list of commits to include in the changelog
-  FULL_CHANGELOG=$(echo "$COMMITS" | while read commit; do
-    SHORT_COMMIT_HASH=$(echo "$commit" | cut -d ' ' -f 1)
-    COMMIT_MESSAGE=$(echo "$commit" | cut -d ' ' -f 2-)
-    echo "- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SHORT_COMMIT_HASH)*: $COMMIT_MESSAGE"
-  done)
-fi
+# Step 4: Get the squash commit (single commit from squashed PR)
+SQUASH_COMMIT_HASH=$(git log -n 1 --pretty=format:"%H")
 
-# Step 3: Generate release notes with emojis
+# Fetch commit message
+SQUASH_COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%s" "$SQUASH_COMMIT_HASH")
+SQUASH_COMMIT_AUTHOR=$(git log -n 1 --pretty=format:"%aN")
+
+# Clean the commit message
+CLEAN_COMMIT_MESSAGE=$(echo "$SQUASH_COMMIT_MESSAGE" | sed 's/ (.*)//g')
+
+# Shorten commit hash
+SHORT_COMMIT_HASH=$(echo "$SQUASH_COMMIT_HASH" | cut -c1-7)
+
+# Step 5: Generate release notes with emojis
 RELEASE_NOTES="*What's Changed* 🚀\n"
 RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
 
@@ -80,7 +94,10 @@ case "$COMMIT_TYPE" in
 esac
 
 # Append commit message with emojis
-RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n$FULL_CHANGELOG\n"
+RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH)*: $CLEAN_COMMIT_MESSAGE\n"
+
+# Add Full Changelog link to the current version
+RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$NEW_VERSION](https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/$NEW_VERSION)"
 
 # Output release notes
 echo -e "$RELEASE_NOTES"

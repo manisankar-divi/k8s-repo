@@ -15,44 +15,45 @@ if [ -z "$GITHUB_TOKEN" ]; then
   exit 1
 fi
 
-# Step 1: Get the current date in YYYY.M.D format (no leading zeros)
-CURRENT_DATE=$(date +'%Y.%m.%d')
+# Get date components
+YEAR=$(date +'%y')   # Last 2 digits of year (25)
+MONTH=$(date +'%-m') # Month without leading zero (1-12)
+DAY=$(date +'%-d')   # Day without leading zero (1-31)
 
-# Extract YEAR, MONTH, DAY without leading zeros
-YEAR=$(date +'%y')   # Last two digits (e.g., 25 for 2025)
-MONTH=$(date +'%-m') # Remove leading zeros (e.g., 1 for January)
-DAY=$(date +'%-d')   # Remove leading zeros (e.g., 5 for 5th)
+# Fetch all tags
+git fetch --tags >/dev/null 2>&1
 
-# Fetch tags and find the latest increment for the current day
-git fetch --tags
+# Get latest increment for today's pattern
+LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -t. -k4 -n | tail -n1)
 
-# Get all tags of the form v<year>.<month>.<day>.<increment> (e.g., v25.1.31.9)
-LATEST_TAGS=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n 1)
-
-# Extract the incremental part (e.g., 9 from v25.1.31.9)
-if [ -z "$LATEST_TAGS" ]; then
+if [[ -z "$LATEST_TAG" ]]; then
+  # No existing tags for today
   NEXT_INCREMENT=1
 else
-  # Extract the increment from the latest tag (e.g., v25.1.31.9 -> 9)
-  LATEST_INCREMENT=$(echo "$LATEST_TAGS" | awk -F'.' '{print $NF}')
+  # Extract current increment and add 1
+  LATEST_INCREMENT="${LATEST_TAG##*.}"
   NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
 fi
 
-# Format the new version with leading zeros for the increment (e.g., 10 → 10)
+# Format new version
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 
-echo "New release to publish: $NEW_VERSION"
+echo "New release version: $NEW_VERSION"
 
-# Step 2: Fetch the previous release tag to use in changelog link
-PREVIOUS_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n 2 | head -n 1)
+# Step 2: Fetch the previous release tag (last release from any day)
+PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 
 if [ -z "$PREVIOUS_TAG" ]; then
-  # No previous release found, skip changelog diff
+  # No previous release found in entire history
   FULL_CHANGELOG_LINK="No previous version found for diff comparison."
 else
-  FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
+  # Verify previous tag is actually older than new version
+  if git merge-base --is-ancestor "$PREVIOUS_TAG" "$NEW_VERSION"; then
+    FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
+  else
+    FULL_CHANGELOG_LINK="Invalid version sequence - previous tag is not ancestor"
+  fi
 fi
-
 # Step 3: Fetch the latest closed PR and categorize commits based on PR title
 PR_TITLE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed" | jq -r '.[0].title')

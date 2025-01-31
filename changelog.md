@@ -2,6 +2,15 @@
 
 
 
+ 🔄 *Previous Release:* None ➝ *New Release:* v25.1.31.1
+
+ *Bug Fixes 🐛* 
+- *[316b3c4](https://github.com/manisankar-divi/k8s-repo/commit/316b3c43661080881c52f0f8d8b0ec569173fde1)*: fix: release.sh file 
+📜 *Full Changelog:* No previous version found for diff comparison.
+🚀 *What's Changed* 
+
+
+
  🔄 *Previous Release:* v25.1.30.18 ➝ *New Release:* v25.1.30.19
 
  *✨ Features✨* 

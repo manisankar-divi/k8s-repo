@@ -12,8 +12,11 @@ jobs:
         run: |
           # Replace markdown headers and add newlines
           PROCESSED_BODY=$(echo "${{ github.event.release.body }}" | sed -E 's/### (.*)/\n*\\1*:/g; s/## (.*)/\n*\\1*:/g; s/^-\s*/- /g')
-          # Output the processed body to GITHUB_OUTPUT
-          echo "processed_body=$PROCESSED_BODY" >> $GITHUB_OUTPUT
+
+          # Use printf to avoid issues with multi-line strings
+          echo "processed_body<<EOF" >> $GITHUB_OUTPUT
+          printf "%s" "$PROCESSED_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Send Slack Notification
         uses: tokorom/action-slack-incoming-webhook@main
@@ -49,7 +52,7 @@ jobs:
               {
                 "type": "section",
                 "text": {
-                  "type": "plain_text",
+                  "type": "mrkdwn",
                   "text": "*Release Notes:*\n${{ steps.process-body.outputs.processed_body }}"
                 }
               },

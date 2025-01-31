@@ -74,13 +74,13 @@ RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
 
 # Categorize commits based on type
 case "$COMMIT_TYPE" in
-"feat") CATEGORY="✨ Features✨" ;;
-"fix") CATEGORY="🐛 Bug Fixes" ;;
-"docs") CATEGORY="📝 Documentation" ;;
-"task") CATEGORY="📌 Tasks" ;;
-"ci" | "cd") CATEGORY="🔧 CI/CD" ;;
-"test") CATEGORY="🧪 Tests" ;;
-*) CATEGORY="📂 Other" ;;
+"feat") CATEGORY="Features ✨" ;;
+"fix") CATEGORY="Bug Fixes 🐛" ;;
+"docs") CATEGORY="Documentation 📝 " ;;
+"task") CATEGORY="Tasks 📌" ;;
+"ci" | "cd") CATEGORY="CI/CD 🔧" ;;
+"test") CATEGORY="Tests 🧪 " ;;
+*) CATEGORY="Other 📂" ;;
 esac
 
 # Append commit message with emojis

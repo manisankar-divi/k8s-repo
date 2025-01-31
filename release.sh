@@ -98,7 +98,7 @@ RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://gi
 
 # Add Full Changelog link (handle first release case)
 if [ "$FULL_CHANGELOG_LINK" != "No previous version found for diff comparison." ]; then
-  RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$$NEW_VERSION]($FULL_CHANGELOG_LINK)"
+  RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$NEW_VERSION]($FULL_CHANGELOG_LINK)"
 else
   RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* $FULL_CHANGELOG_LINK"
 fi
@@ -109,5 +109,5 @@ echo -e "$RELEASE_NOTES"
 curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
-  
+
 echo "✅ Release notes generated and release created successfully!"

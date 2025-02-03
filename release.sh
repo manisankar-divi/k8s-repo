@@ -81,8 +81,8 @@ declare -A TYPE_EMOJIS=(
   [fix]="Bug Fixes 🐛"
   [docs]="Documentation 📝"
   [test]="Tests 🧪"
-  [ci]="CI/CD 🔧"
-  [cd]="Deployment 🔧"
+  [ci]="CI 🔧"
+  [cd]="CD 🔧"
   [task]="Tasks 📌"
   [chore]="Chores 🧹"
 )
@@ -94,10 +94,10 @@ CATEGORY=${TYPE_EMOJIS[$TYPE]:-📦 Other}
 RELEASE_BODY=$(cat <<EOF
 *What's Changed🚀 ($NEW_VERSION)*
 
-**${CATEGORY}**
+*${CATEGORY}*
 - [${SHORT_HASH}](https://github.com/${REPO_OWNER}/${REPO_NAME}/commit/${COMMIT_HASH}): ${PR_TITLE}
 
-**📜Full Changelog:** https://github.com/${REPO_OWNER}/${REPO_NAME}/compare/${PREVIOUS_TAG}...${NEW_VERSION}
+*📜Full Changelog:* https://github.com/${REPO_OWNER}/${REPO_NAME}/compare/${PREVIOUS_TAG}...${NEW_VERSION}
 EOF
 )
 

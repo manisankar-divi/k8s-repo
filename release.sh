@@ -99,7 +99,7 @@ case "$COMMIT_TYPE" in
 esac
 
 # Append commit message with emojis
-RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH)*: $CLEAN_COMMIT_MESSAGE\n"
+RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SQUASH_COMMIT_HASH)*: $PR_TITLE\n"
 
 # Add Full Changelog link to the current version
 RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$NEW_VERSION](https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/$NEW_VERSION)"

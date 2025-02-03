@@ -77,14 +77,14 @@ fi
 
 # Categorize changes
 declare -A TYPE_EMOJIS=(
-  [feat]="✨ Features" 
-  [fix]="🐛 Bug Fixes"
-  [docs]="📝 Documentation"
-  [test]="🧪 Tests"
-  [ci]="🔧 CI/CD"
-  [cd]="🚀 Deployment"
-  [task]="📌 Tasks"
-  [chore]="🧹 Chores"
+  [feat]="Features ✨" 
+  [fix]="Bug Fixes 🐛"
+  [docs]="Documentation 📝"
+  [test]="Tests 🧪"
+  [ci]="CI/CD 🔧"
+  [cd]="Deployment 🔧"
+  [task]="Tasks 📌"
+  [chore]="Chores 🧹"
 )
 
 TYPE=$(echo "$PR_TITLE" | cut -d: -f1)
@@ -92,12 +92,12 @@ CATEGORY=${TYPE_EMOJIS[$TYPE]:-📦 Other}
 
 # Generate release notes
 RELEASE_BODY=$(cat <<EOF
-## What's Changed ($NEW_VERSION)
+*What's Changed🚀 ($NEW_VERSION)*
 
 **${CATEGORY}**
 - [${SHORT_HASH}](https://github.com/${REPO_OWNER}/${REPO_NAME}/commit/${COMMIT_HASH}): ${PR_TITLE}
 
-**Full Changelog:** https://github.com/${REPO_OWNER}/${REPO_NAME}/compare/${PREVIOUS_TAG}...${NEW_VERSION}
+**📜Full Changelog:** https://github.com/${REPO_OWNER}/${REPO_NAME}/compare/${PREVIOUS_TAG}...${NEW_VERSION}
 EOF
 )
 

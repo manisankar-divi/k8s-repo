@@ -23,12 +23,13 @@ DAY=$(date +'%-d')   # Day without leading zero (1-31)
 # Fetch all tags
 git fetch --tags >/dev/null 2>&1
 
-# Get latest increment for today's pattern
-LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -t. -k4 -n | tail -n1)
+# Get the latest tag matching today's date pattern
+LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
 
 if [[ -z "$LATEST_TAG" ]]; then
   NEXT_INCREMENT=1
 else
+  # Extract the last numeric part and increment
   LATEST_INCREMENT="${LATEST_TAG##*.}"
   NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
 fi
@@ -38,7 +39,7 @@ NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 
 echo "New release version: $NEW_VERSION"
 
-# Step 2: Fetch the previous release tag for changelog link
+# Step 2: Fetch the previous release tag for changelog link (not today)
 PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 
 if [ -z "$PREVIOUS_TAG" ]; then
@@ -81,9 +82,6 @@ SHORT_COMMIT_HASH=$(echo "$LAST_COMMIT_HASH" | cut -c1-7)
 RELEASE_NOTES="*What's Changed* 🚀\n"
 RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
 RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$LAST_COMMIT_HASH)*: $PR_TITLE\n\n"
-
-# # Add Full Changelog link
-# RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$FULL_CHANGELOG_LINK]"
 
 # Step 7: Output release notes
 echo -e "$RELEASE_NOTES"

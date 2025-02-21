@@ -82,8 +82,8 @@ RELEASE_NOTES="*What's Changed* 🚀\n"
 RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
 RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$LAST_COMMIT_HASH)*: $PR_TITLE\n\n"
 
-# Add Full Changelog link
-RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$FULL_CHANGELOG_LINK]"
+# # Add Full Changelog link
+# RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$FULL_CHANGELOG_LINK]"
 
 # Step 7: Output release notes
 echo -e "$RELEASE_NOTES"

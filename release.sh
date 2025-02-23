@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eux
 
 # --- Environment Checks ---
 [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ] && { echo "Error: REPO_OWNER/REPO_NAME not set"; exit 1; }
@@ -21,6 +22,7 @@ NEXT_INCREMENT=$(( ${LATEST_TAG##*.:-0} + 1 ))
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 echo "New release version: $NEW_VERSION"
 
+# ... rest of your script ...
 # Step 2: Fetch the previous release tag for changelog link (not today)
 PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 
@@ -52,7 +54,7 @@ case "$PR_TITLE" in
 "fix"*) CATEGORY="Bug Fixes 🐛" ;;
 "docs"*) CATEGORY="Documentation 📝" ;;
 "task"*) CATEGORY="Tasks 📌" ;;
-"ci" | "cd") CATEGORY="CI/CD 🔧" ;;
+"ci"* | "cd"*) CATEGORY="CI/CD 🔧" ;;
 "test"*) CATEGORY="Tests 🧪" ;;
 *) CATEGORY="Other 📂" ;;
 esac

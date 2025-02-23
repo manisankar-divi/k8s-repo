@@ -47,3 +47,29 @@
 # feat-1
 
 # task-3
+
+# task-1
+
+# task-5
+
+# task-2
+
+# task-4
+
+# task-8
+
+# demo-6
+
+# task-10
+
+# task-6
+
+# task-7
+
+# task-9
+
+# demo-4
+
+# demo-10
+
+# demo-1

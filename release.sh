@@ -6,23 +6,30 @@ set -eux
 [ -z "$GITHUB_TOKEN" ] && { echo "Error: GITHUB_TOKEN not set"; exit 1; }
 
 # --- Date Components (Fixed) ---
-YEAR=$(date -u +'%y')     # 24 for 2024
-MONTH=$(date -u +'%m')    # 03 for March
-DAY=$(date -u +'%d')      # 01 for 1st
-MONTH=${MONTH#0}          # Remove leading zero → 3
-DAY=${DAY#0}              # Remove leading zero → 1
+YEAR=$(date -u +'%y')     # 25 for 2025 (adjust if system date is incorrect)
+MONTH=$(date -u +'%m')    # 02 for February
+DAY=$(date -u +'%d')      # 23 for 23rd
+MONTH=${MONTH#0}          # Remove leading zero → 2
+DAY=${DAY#0}              # Remove leading zero → 23
 
 # --- Fetch Tags ---
 git fetch --tags >/dev/null 2>&1
 
 # --- Get Latest Tag for Today ---
 LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | awk -F. '{print $NF,$0}' | sort -nr | head -1 | cut -d' ' -f2)
-NEXT_INCREMENT=$(( ${LATEST_TAG##*.:-0} + 1 ))
+
+if [[ -z "$LATEST_TAG" ]]; then
+  NEXT_INCREMENT=1
+else
+  # Extract the last numeric part (e.g., 11 from v25.2.23.11)
+  LATEST_INCREMENT="${LATEST_TAG##*.}"
+  NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
+fi
 
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 echo "New release version: $NEW_VERSION"
 
-# ... rest of your script ...
+# ... rest of the script ...
 # Step 2: Fetch the previous release tag for changelog link (not today)
 PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 

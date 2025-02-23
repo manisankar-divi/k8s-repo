@@ -29,6 +29,7 @@ fi
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 echo "New release version: $NEW_VERSION"
 
+# ... rest of the script ...
 # Step 2: Fetch the previous release tag for changelog link (not today)
 PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 

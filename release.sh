@@ -1,42 +1,22 @@
 #!/bin/bash
 
-# Exit script on error
-set -e
-set -x
+# --- Environment Checks ---
+[ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ] && { echo "Error: REPO_OWNER/REPO_NAME not set"; exit 1; }
+[ -z "$GITHUB_TOKEN" ] && { echo "Error: GITHUB_TOKEN not set"; exit 1; }
 
-# Ensure required environment variables are set
-if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
-  echo "Error: REPO_OWNER and REPO_NAME environment variables must be set."
-  exit 1
-fi
+# --- Date Components ---
+YEAR=$(date +'%y')
+MONTH=$(date +'%-m')
+DAY=$(date +'%-d')
 
-if [ -z "$GITHUB_TOKEN" ]; then
-  echo "Error: GITHUB_TOKEN environment variable is not set. Exiting."
-  exit 1
-fi
-
-# Get date components
-YEAR=$(date +'%y')   # Last 2 digits of year (25)
-MONTH=$(date +'%-m') # Month without leading zero (1-12)
-DAY=$(date +'%-d')   # Day without leading zero (1-31)
-
-# Fetch all tags
+# --- Fetch Tags ---
 git fetch --tags >/dev/null 2>&1
 
-# Get the latest tag matching today's date pattern
-LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
+# --- Get Latest Tag for Today (Fixed Sorting) ---
+LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | awk -F. '{print $NF,$0}' | sort -nr | head -1 | cut -d' ' -f2)
+NEXT_INCREMENT=$(( ${LATEST_TAG##*.} + 1 )) || NEXT_INCREMENT=1
 
-if [[ -z "$LATEST_TAG" ]]; then
-  NEXT_INCREMENT=1
-else
-  # Extract the last numeric part and increment
-  LATEST_INCREMENT="${LATEST_TAG##*.}"
-  NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
-fi
-
-# Format new version
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
-
 echo "New release version: $NEW_VERSION"
 
 # Step 2: Fetch the previous release tag for changelog link (not today)
@@ -70,7 +50,7 @@ case "$PR_TITLE" in
 "fix"*) CATEGORY="Bug Fixes 🐛" ;;
 "docs"*) CATEGORY="Documentation 📝" ;;
 "task"*) CATEGORY="Tasks 📌" ;;
-"ci" | "cd") CATEGORY="CI/CD 🔧" ;;
+"ci"* | "cd"*) CATEGORY="CI/CD 🔧" ;;
 "test"*) CATEGORY="Tests 🧪" ;;
 *) CATEGORY="Other 📂" ;;
 esac

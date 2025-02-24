@@ -40,7 +40,7 @@ NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 
 echo "New release version: $NEW_VERSION"
 
-# Step 2: Fetch the previous release tag for changelog link (not today)
+# Fetch the previous release tag for changelog link (not today)
 PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 
 if [ -z "$PREVIOUS_TAG" ]; then
@@ -49,10 +49,10 @@ else
   FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
 fi
 
-# Step 3: Get the latest commit hash (HEAD) after merging
+# Get the latest commit hash (HEAD) after merging
 LAST_COMMIT_HASH=$(git rev-parse HEAD)
 
-# Step 4: Find the PR associated with this merge commit
+# Find the PR associated with this merge commit
 MERGED_PR=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed&sort=updated&direction=desc" | \
   jq -r --arg HASH "$LAST_COMMIT_HASH" '.[] | select(.merge_commit_sha == $HASH)')
@@ -65,29 +65,34 @@ if [[ -z "$PR_TITLE" || "$PR_TITLE" == "null" ]]; then
   exit 1
 fi
 
-# Step 5: Categorize PR title based on type
-case "$PR_TITLE" in
-"feat"*) CATEGORY="Features ✨" ;;
-"fix"*) CATEGORY="Bug Fixes 🐛" ;;
-"docs"*) CATEGORY="Documentation 📝" ;;
-"task"*) CATEGORY="Tasks 📌" ;;
-"ci"* | "cd"*) CATEGORY="CI/CD 🔧" ;;
-"test"*) CATEGORY="Tests 🧪" ;;
+
+# Shorten commit hash
+SHORT_COMMIT_HASH=$(echo "$SQUASH_COMMIT_HASH" | cut -c1-7)
+
+# Step 5: Generate release notes with emoji
+RELEASE_NOTES="*What's Changed* 🚀\n"
+RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
+
+# Categorize commits based on type
+case "$COMMIT_TYPE" in
+"feat") CATEGORY="Features ✨" ;;
+"fix") CATEGORY="Bug Fixes 🐛" ;;
+"docs") CATEGORY="Documentation 📝 " ;;
+"task") CATEGORY="Tasks 📌" ;;
+"ci" | "cd") CATEGORY="CI/CD 🔧" ;;
+"test") CATEGORY="Tests 🧪 " ;;
 *) CATEGORY="Other 📂" ;;
 esac
 
-# Shorten commit hash for display
-SHORT_COMMIT_HASH=$(echo "$LAST_COMMIT_HASH" | cut -c1-7)
-
-# Step 6: Generate release notes
-RELEASE_NOTES="*What's Changed* 🚀\n"
-RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
+# Append commit message with emojis
 RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$LAST_COMMIT_HASH)*: $PR_TITLE\n\n"
 
-# Step 7: Output release notes
+# # Add Full Changelog link to the current version
+# RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$NEW_VERSION](https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/$NEW_VERSION)"
+
+# Output release notes
 echo -e "$RELEASE_NOTES"
 
-# Step 8: Create GitHub release
 curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"

@@ -1,35 +1,45 @@
 #!/bin/bash
-set -eux
 
-# --- Environment Checks ---
-[ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ] && { echo "Error: REPO_OWNER/REPO_NAME not set"; exit 1; }
-[ -z "$GITHUB_TOKEN" ] && { echo "Error: GITHUB_TOKEN not set"; exit 1; }
+# Exit script on error
+set -e
+set -x
 
-# --- Date Components (Fixed) ---
-YEAR=$(date -u +'%y')     # 25 for 2025 (adjust if system date is incorrect)
-MONTH=$(date -u +'%m')    # 02 for February
-DAY=$(date -u +'%d')      # 23 for 23rd
-MONTH=${MONTH#0}          # Remove leading zero → 2
-DAY=${DAY#0}              # Remove leading zero → 23
+# Ensure required environment variables are set
+if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
+  echo "Error: REPO_OWNER and REPO_NAME environment variables must be set."
+  exit 1
+fi
 
-# --- Fetch Tags ---
+if [ -z "$GITHUB_TOKEN" ]; then
+  echo "Error: GITHUB_TOKEN environment variable is not set. Exiting."
+  exit 1
+fi
+
+# Get date components
+YEAR=$(date +'%y')   # Last 2 digits of year (25)
+MONTH=$(date +'%-m') # Month without leading zero (1-12)
+DAY=$(date +'%-d')   # Day without leading zero (1-31)
+
+# Fetch all tags
 git fetch --tags >/dev/null 2>&1
 
-# --- Get Latest Tag for Today ---
-LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | awk -F. '{print $NF,$0}' | sort -nr | head -1 | cut -d' ' -f2)
+# Get latest increment for today's pattern
+LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -t. -k4 -n | tail -n1)
 
 if [[ -z "$LATEST_TAG" ]]; then
+  # No existing tags for today
   NEXT_INCREMENT=1
 else
-  # Extract the last numeric part (e.g., 11 from v25.2.23.11)
+  # Extract current increment and add 1
   LATEST_INCREMENT="${LATEST_TAG##*.}"
   NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
 fi
 
+# Format new version
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
+
 echo "New release version: $NEW_VERSION"
 
-# ... rest of the script ...
 # Step 2: Fetch the previous release tag for changelog link (not today)
 PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 

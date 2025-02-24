@@ -16,7 +16,8 @@ DAY=${DAY#0}              # Remove leading zero → 23
 git fetch --tags >/dev/null 2>&1
 
 # --- Get Latest Tag for Today ---
-LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | awk -F. '{print $NF,$0}' | sort -nr | head -1 | cut -d' ' -f2)
+LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sed 's/^v//' | sort -t '.' -k4,4n | tail -n1)
+
 
 if [[ -z "$LATEST_TAG" ]]; then
   NEXT_INCREMENT=1

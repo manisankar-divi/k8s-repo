@@ -18,7 +18,6 @@ git fetch --tags >/dev/null 2>&1
 # --- Get Latest Tag for Today ---
 LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sed 's/^v//' | sort -t '.' -k4,4n | tail -n1)
 
-
 if [[ -z "$LATEST_TAG" ]]; then
   NEXT_INCREMENT=1
 else

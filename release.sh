@@ -52,6 +52,7 @@ fi
 # Step 3: Get the latest commit hash (HEAD) after merging
 LAST_COMMIT_HASH=$(git rev-parse HEAD)
 
+
 # Step 4: Find the PR associated with this merge commit
 MERGED_PR=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed&sort=updated&direction=desc" | \

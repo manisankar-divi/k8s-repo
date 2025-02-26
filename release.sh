@@ -91,7 +91,6 @@ curl -L \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
   https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases \
-
   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\", \"draft\": false, \"prerelease\": false, \"generate_release_notes\": false}"
 
 echo "✅ Release notes generated and release created successfully!"

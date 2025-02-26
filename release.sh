@@ -20,11 +20,12 @@ YEAR=$(date +'%y')   # Last 2 digits of year (25)
 MONTH=$(date +'%-m') # Month without leading zero (1-12)
 DAY=$(date +'%-d')   # Day without leading zero (1-31)
 
+# Fetch all tags
+git fetch --tags >/dev/null 2>&1
+
 # Get latest increment for today's pattern
-LATEST_TAG=$(git tag "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
-
-echo $LATEST_TAG
-
+#LATEST_TAG=$(git tag | sort -V | tail -n1)
+LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
 if [[ -z "$LATEST_TAG" ]]; then
   # No existing tags for today
   NEXT_INCREMENT=1
@@ -36,16 +37,11 @@ fi
 
 # Format new version
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
-
 echo "New release version: $NEW_VERSION"
-# Step 2: Fetch the previous release tag for changelog link (not today)
-PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 
-if [ -z "$PREVIOUS_TAG" ]; then
-  FULL_CHANGELOG_LINK="No previous version found for diff comparison."
-else
-  FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
-fi
+# Find the previous version (most recent tag overall)
+PREVIOUS_TAG=$(git tag | sort -V | tail -n1)
+echo "Previous release version: ${PREVIOUS_TAG}"
 
 # Step 3: Get the latest commit hash (HEAD) after merging
 LAST_COMMIT_HASH=$(git rev-parse HEAD)

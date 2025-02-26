@@ -15,11 +15,6 @@ if [ -z "$GITHUB_TOKEN" ]; then
   exit 1
 fi
 
-# Get date components
-YEAR=$(date +'%y')   # Last 2 digits of year (25)
-MONTH=$(date +'%-m') # Month without leading zero (1-12)
-DAY=$(date +'%-d')   # Day without leading zero (1-31)
-
 # Fetch all tags
 git fetch --tags >/dev/null 2>&1
 

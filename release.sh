@@ -27,8 +27,10 @@ git fetch --tags >/dev/null 2>&1
 LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
 
 if [[ -z "$LATEST_TAG" ]]; then
+  # No existing tags for today
   NEXT_INCREMENT=1
 else
+  # Extract current increment and add 1
   LATEST_INCREMENT="${LATEST_TAG##*.}"
   NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
 fi
@@ -38,7 +40,7 @@ NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
 
 echo "New release version: $NEW_VERSION"
 
-# Step 2: Fetch the previous release tag for changelog link
+# Step 2: Fetch the previous release tag for changelog link (not today)
 PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
 
 if [ -z "$PREVIOUS_TAG" ]; then
@@ -49,6 +51,7 @@ fi
 
 # Step 3: Get the latest commit hash (HEAD) after merging
 LAST_COMMIT_HASH=$(git rev-parse HEAD)
+
 
 # Step 4: Find the PR associated with this merge commit
 MERGED_PR=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
@@ -69,7 +72,7 @@ case "$PR_TITLE" in
 "fix"*) CATEGORY="Bug Fixes 🐛" ;;
 "docs"*) CATEGORY="Documentation 📝" ;;
 "task"*) CATEGORY="Tasks 📌" ;;
-"ci" | "cd") CATEGORY="CI/CD 🔧" ;;
+"ci"* | "cd"*) CATEGORY="CI/CD 🔧" ;;
 "test"*) CATEGORY="Tests 🧪" ;;
 *) CATEGORY="Other 📂" ;;
 esac
@@ -81,9 +84,6 @@ SHORT_COMMIT_HASH=$(echo "$LAST_COMMIT_HASH" | cut -c1-7)
 RELEASE_NOTES="*What's Changed* 🚀\n"
 RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
 RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$LAST_COMMIT_HASH)*: $PR_TITLE\n\n"
-
-# # Add Full Changelog link
-# RELEASE_NOTES="$RELEASE_NOTES\n📜 *Full Changelog:* [$FULL_CHANGELOG_LINK]"
 
 # Step 7: Output release notes
 echo -e "$RELEASE_NOTES"

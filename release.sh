@@ -24,7 +24,7 @@ DAY=$(date +'%-d')   # Day without leading zero (1-31)
 git fetch --tags >/dev/null 2>&1
 
 # Get latest increment for today's pattern
-LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
+LATEST_TAG=$(git ls-remote --tags origin | awk -F'/' '{print $3}' | sort -V | tail -n1)
 
 if [[ -z "$LATEST_TAG" ]]; then
   # No existing tags for today

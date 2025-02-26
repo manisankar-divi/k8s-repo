@@ -82,8 +82,16 @@ RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://gi
 echo -e "$RELEASE_NOTES"
 
 # Step 8: Create GitHub release
-curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
-  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
+# curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+#   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
+#   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
+curl -L \
+  -X POST \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases \
+  -d "{\"tag_name\": \"$NEW_VERSION\", \"target_commitish\": \"main\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\", \"draft\": false, \"prerelease\": false, \"generate_release_notes\": false}"
+
 
 echo "✅ Release notes generated and release created successfully!"

@@ -90,22 +90,12 @@ else
 fi
 
 # Create GitHub release
-curl -sSfL -X POST \
+curl -L \
+  -X POST \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases" \
-  -d "$(jq -n \
-    --arg tag "$NEW_VERSION" \
-    --arg name "$NEW_VERSION" \
-    --arg body "$RELEASE_BODY" \
-    '{
-      "tag_name": $tag,
-      "name": $name,
-      "body": $body,
-      "draft": false,
-      "prerelease": false,
-      "generate_release_notes": false
-    }')"
+  https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases \
+  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\", \"draft\": false, \"prerelease\": false, \"generate_release_notes\": false}"
 
 echo "✅ Release created successfully: $NEW_VERSION"

@@ -21,7 +21,7 @@ MONTH=$(date +'%-m') # Month without leading zero (1-12)
 DAY=$(date +'%-d')   # Day without leading zero (1-31)
 
 # Get latest increment for today's pattern
-LATEST_TAG=$(git tag | sort -V | tail -n1)
+LATEST_TAG=$(git tag "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
 
 echo $LATEST_TAG
 

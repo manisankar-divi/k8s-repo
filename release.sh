@@ -15,12 +15,17 @@ if [ -z "$GITHUB_TOKEN" ]; then
   exit 1
 fi
 
+# Get date components
+YEAR=$(date +'%y')   # Last 2 digits of year (e.g., 25)
+MONTH=$(date +'%-m') # Month without leading zero (1-12)
+DAY=$(date +'%-d')   # Day without leading zero (1-31)
+
 # Fetch all tags
 git fetch --tags >/dev/null 2>&1
 
 # Get latest increment for today's pattern
-#LATEST_TAG=$(git tag | sort -V | tail -n1)
 LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
+
 if [[ -z "$LATEST_TAG" ]]; then
   # No existing tags for today
   NEXT_INCREMENT=1
@@ -40,7 +45,6 @@ echo "Previous release version: ${PREVIOUS_TAG}"
 
 # Step 3: Get the latest commit hash (HEAD) after merging
 LAST_COMMIT_HASH=$(git rev-parse HEAD)
-
 
 # Step 4: Find the PR associated with this merge commit
 MERGED_PR=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \

@@ -1,96 +1,111 @@
 #!/bin/bash
 
-# Exit script on error
-set -e
-set -x
+# Exit on error and print commands
+set -eo pipefail
 
-# Ensure required environment variables are set
-if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
-  echo "Error: REPO_OWNER and REPO_NAME environment variables must be set."
-  exit 1
-fi
+# Validate environment variables
+required_vars=("REPO_OWNER" "REPO_NAME" "GITHUB_TOKEN")
+for var in "${required_vars[@]}"; do
+  if [[ -z "${!var}" ]]; then
+    echo "Error: $var environment variable must be set"
+    exit 1
+  fi
+done
 
-if [ -z "$GITHUB_TOKEN" ]; then
-  echo "Error: GITHUB_TOKEN environment variable is not set. Exiting."
-  exit 1
-fi
+# Date components with zero-padded sequence
+YEAR=$(date +'%y')
+MONTH=$(date +'%-m')
+DAY=$(date +'%-d')
+SEQUENCE_LENGTH=3  # Supports up to 999 daily releases
 
-# Get date components
-YEAR=$(date +'%y')   # Last 2 digits of year (e.g., 25)
-MONTH=$(date +'%-m') # Month without leading zero (1-12)
-DAY=$(date +'%-d')   # Day without leading zero (1-31)
-
-# Fetch all tags
+# Fetch all tags from remote
 git fetch --tags >/dev/null 2>&1
 
-# Get the latest tag for today
-LATEST_TAG=$(git ls-remote --tags origin "refs/tags/v${YEAR}.${MONTH}.${DAY}.*" | awk -F'/' '{print $3}' | sort -V | tail -n1)
+# Find latest tag for today using version sort
+TODAYS_PATTERN="v${YEAR}.${MONTH}.${DAY}.*"
+LATEST_TAG=$(git tag --list "$TODAYS_PATTERN" --sort=-version:refname | head -n1)
 
-if [[ -z "$LATEST_TAG" ]]; then
-  # No existing tags for today
-  NEXT_INCREMENT=1
+# Calculate next sequence number
+if [[ -n "$LATEST_TAG" ]]; then
+  CURRENT_SEQ=$(echo "$LATEST_TAG" | awk -F. '{print $4}')
+  NEXT_SEQ=$(printf "%0${SEQUENCE_LENGTH}d" $((10#$CURRENT_SEQ + 1)))
 else
-  # Extract current increment and add 1
-  LATEST_INCREMENT="${LATEST_TAG##*.}"
-  NEXT_INCREMENT=$((LATEST_INCREMENT + 1))
+  NEXT_SEQ=$(printf "%0${SEQUENCE_LENGTH}d" 1)
 fi
 
-# Format new version
-NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
-echo "New release version: $NEW_VERSION"
+NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_SEQ}"
+echo "🔄 New Release Version: $NEW_VERSION"
 
-# Find the previous version (most recent tag overall)
-PREVIOUS_TAG=$(git tag | sort -V | tail -n1)
-echo "Previous release version: ${PREVIOUS_TAG}"
+# Find previous release (any version)
+PREVIOUS_TAG=$(git tag --list --sort=-version:refname | grep -E '^v[0-9]{2}\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+echo "📌 Previous Release Version: ${PREVIOUS_TAG:-None}"
 
-# Step 3: Get the latest commit hash (HEAD) after merging
-LAST_COMMIT_HASH=$(git rev-parse HEAD)
+# Get all commits since last release
+COMMITS_SINCE_LAST_RELEASE=$(
+  if [[ -n "$PREVIOUS_TAG" ]]; then
+    git log --pretty=format:"%H" "${PREVIOUS_TAG}..HEAD"
+  else
+    git log --pretty=format:"%H"
+  fi
+)
 
-# Step 4: Find the PR associated with this merge commit
-MERGED_PR=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed&sort=updated&direction=desc" | \
-  jq -r --arg HASH "$LAST_COMMIT_HASH" '.[] | select(.merge_commit_sha == $HASH)')
+# Collect PR information
+PR_CATEGORIES=()
+declare -A CATEGORY_MAP=(
+  ["feat"]="Features ✨"
+  ["fix"]="Bug Fixes 🐛"
+  ["docs"]="Documentation 📝"
+  ["task"]="Tasks 📌"
+  ["ci"]="CI/CD 🔧"
+  ["cd"]="CI/CD 🔧"
+  ["test"]="Tests 🧪"
+)
 
-# Extract PR title
-PR_TITLE=$(echo "$MERGED_PR" | jq -r '.title')
+while IFS= read -r commit_hash; do
+  PR_DATA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/search/issues?q=repo:$REPO_OWNER/$REPO_NAME+is:pr+is:merged+sha:$commit_hash")
 
-if [[ -z "$PR_TITLE" || "$PR_TITLE" == "null" ]]; then
-  echo "Error: No matching PR found for commit $LAST_COMMIT_HASH."
-  exit 1
+  PR_TITLE=$(echo "$PR_DATA" | jq -r '.items[0].title // empty')
+  PR_NUMBER=$(echo "$PR_DATA" | jq -r '.items[0].number // empty')
+  
+  if [[ -n "$PR_TITLE" ]]; then
+    PREFIX=$(echo "$PR_TITLE" | awk '{print tolower($1)}' | tr -d ':')
+    CATEGORY=${CATEGORY_MAP["$PREFIX"]:-"Other 📂"}
+    
+    SHORT_HASH=$(echo "$commit_hash" | cut -c1-7)
+    ENTRY="[#${PR_NUMBER}](${GITHUB_URL:-https://github.com}/$REPO_OWNER/$REPO_NAME/pull/$PR_NUMBER) - $PR_TITLE ([$SHORT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$commit_hash))"
+    
+    PR_CATEGORIES+=("$CATEGORY"$'\n'"- $ENTRY")
+  fi
+done <<< "$COMMITS_SINCE_LAST_RELEASE"
+
+# Generate organized release notes
+RELEASE_BODY="## What's Changed 🚀\n\n"
+RELEASE_BODY+="**New Release Version**: $NEW_VERSION\n\n"
+
+if [[ ${#PR_CATEGORIES[@]} -gt 0 ]]; then
+  RELEASE_BODY+="$(printf "%s\n" "${PR_CATEGORIES[@]}" | sort -u | awk 'BEGIN {RS="\n\n"; FS="\n"; OFS="\n"} !seen[$1]++ {print $2}')\n"
+else
+  RELEASE_BODY+="No associated PRs found\n"
 fi
 
-# Step 5: Categorize PR title based on type
-case "$PR_TITLE" in
-"feat"*) CATEGORY="Features ✨" ;;
-"fix"*) CATEGORY="Bug Fixes 🐛" ;;
-"docs"*) CATEGORY="Documentation 📝" ;;
-"task"*) CATEGORY="Tasks 📌" ;;
-"ci"* | "cd"*) CATEGORY="CI/CD 🔧" ;;
-"test"*) CATEGORY="Tests 🧪" ;;
-*) CATEGORY="Other 📂" ;;
-esac
-
-# Shorten commit hash for display
-SHORT_COMMIT_HASH=$(echo "$LAST_COMMIT_HASH" | cut -c1-7)
-
-# Step 6: Generate release notes
-RELEASE_NOTES="*What's Changed* 🚀\n"
-RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
-RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$LAST_COMMIT_HASH)*: $PR_TITLE\n\n"
-
-# Step 7: Output release notes
-echo -e "$RELEASE_NOTES"
-
-# Step 8: Create GitHub release
-# curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
-#   -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
-#   "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
-curl -L \
-  -X POST \
+# Create GitHub release
+curl -sSfL -X POST \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases \
-  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\", \"draft\": false, \"prerelease\": false, \"generate_release_notes\": false}"
+  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases" \
+  -d "$(jq -n \
+    --arg tag "$NEW_VERSION" \
+    --arg name "$NEW_VERSION" \
+    --arg body "$RELEASE_BODY" \
+    '{
+      "tag_name": $tag,
+      "name": $name,
+      "body": $body,
+      "draft": false,
+      "prerelease": false,
+      "generate_release_notes": false
+    }')"
 
-echo "✅ Release notes generated and release created successfully!"
+echo "✅ Release created successfully: $NEW_VERSION"

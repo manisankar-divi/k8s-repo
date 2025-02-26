@@ -20,6 +20,9 @@ YEAR=$(date +'%y')   # Last 2 digits of year (25)
 MONTH=$(date +'%-m') # Month without leading zero (1-12)
 DAY=$(date +'%-d')   # Day without leading zero (1-31)
 
+# Fetch all tags
+git fetch --tags >/dev/null 2>&1
+
 # Get latest increment for today's pattern
 LATEST_TAG=$(git tag | sort -V | tail -n1)
 

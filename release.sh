@@ -24,7 +24,7 @@ DAY=$(date +'%-d')   # Day without leading zero (1-31)
 git fetch --tags >/dev/null 2>&1
 
 # Get latest increment for today's pattern
-LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -V | tail -n1)
+LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -t. -k4 -n | tail -n1)
 
 if [[ -z "$LATEST_TAG" ]]; then
   # No existing tags for today
@@ -52,10 +52,9 @@ fi
 # Step 3: Get the latest commit hash (HEAD) after merging
 LAST_COMMIT_HASH=$(git rev-parse HEAD)
 
-
 # Step 4: Find the PR associated with this merge commit
 MERGED_PR=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed&sort=updated&direction=desc" | \
+  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/pulls?state=closed&sort=updated&direction=desc" |
   jq -r --arg HASH "$LAST_COMMIT_HASH" '.[] | select(.merge_commit_sha == $HASH)')
 
 # Extract PR title
@@ -74,6 +73,7 @@ case "$PR_TITLE" in
 "task"*) CATEGORY="Tasks 📌" ;;
 "ci"* | "cd"*) CATEGORY="CI/CD 🔧" ;;
 "test"*) CATEGORY="Tests 🧪" ;;
+"patch"*) CATEGORY="Patches 🩹" ;;
 *) CATEGORY="Other 📂" ;;
 esac
 
@@ -89,12 +89,8 @@ RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://gi
 echo -e "$RELEASE_NOTES"
 
 # Step 8: Create GitHub release
-curl -L \
-  -X POST \
-  -H "Accept: application/vnd.github+json" \
-  -H "Authorization: Bearer $GITHUB_TOKEN" \
-  -H "X-GitHub-Api-Version: 2022-11-28" \
-  https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases \
-  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\", \"draft\": false, \"prerelease\": false, \"generate_release_notes\": false}"
+curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+  -d "{\"tag_name\": \"$NEW_VERSION\", \"name\": \"$NEW_VERSION\", \"body\": \"$RELEASE_NOTES\"}" \
+  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
 
 echo "✅ Release notes generated and release created successfully!"

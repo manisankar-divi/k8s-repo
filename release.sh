@@ -16,7 +16,7 @@ if [ -z "$GITHUB_TOKEN" ]; then
 fi
 
 # Get the current branch
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+CURRENT_BRANCH=$(git branch --show-current)
 
 # Ensure we are merging from master to production
 if [[ "$CURRENT_BRANCH" != "production" ]]; then

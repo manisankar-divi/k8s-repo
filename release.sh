@@ -21,7 +21,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 # Ensure we are merging from master to production
 if [[ "$CURRENT_BRANCH" != "production" ]]; then
   echo "Not on production branch. Skipping release process."
-  exit 0
+  exit 1
 fi
 
 # Get the last commit message
@@ -30,7 +30,7 @@ LAST_COMMIT_MESSAGE=$(git log -1 --format=%s)
 # Check if commit message starts with fix:, feat:, or patch:
 if [[ ! "$LAST_COMMIT_MESSAGE" =~ ^(fix:|feat:|patch:|docs:|task:|ci:|cd:|test:) ]]; then
   echo "Commit message does not match fix:, feat:, patch:, docs:, task:, ci:, cd:, or test:. Skipping release process."
-  exit 0
+  exit 1
 fi
 
 echo "Valid commit message detected. Proceeding with release process..."

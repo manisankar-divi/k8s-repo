@@ -8,7 +8,7 @@ jobs:
   release:
     name: Automated Release
     runs-on: ubuntu-24.04
-    # if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true
     permissions:
       contents: write
 
@@ -28,4 +28,5 @@ jobs:
           REPO_OWNER: "manisankar-divi" # Replace with your GitHub username q
           REPO_NAME: "k8s-repo" # Replace with your repository name
         run: |
+          pwd
           bash ./release.sh

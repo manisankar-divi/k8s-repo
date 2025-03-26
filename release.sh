@@ -81,7 +81,6 @@ fi
 SHORT_COMMIT_HASH=$(git log -1 --oneline | awk '{print $1}')
 echo "Short Commit Hash: $SHORT_COMMIT_HASH"
 
-
 # Step 4: Categorize commit message based on type
 case "$LAST_COMMIT_MESSAGE" in
 "feat"*) CATEGORY="Features ✨" ;;

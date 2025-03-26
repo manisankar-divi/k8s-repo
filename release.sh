@@ -96,7 +96,7 @@ esac
 # Step 5: Generate release notes
 RELEASE_NOTES="*What's Changed* 🚀\n"
 RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
-RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$LAST_COMMIT_HASH)*: $LAST_COMMIT_MESSAGE\n\n"
+RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SHORT_COMMIT_HASH)*: $LAST_COMMIT_MESSAGE\n\n"
 
 # Step 6: Output release notes
 echo -e "$RELEASE_NOTES"

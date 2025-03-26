@@ -16,7 +16,7 @@ if [ -z "$GITHUB_TOKEN" ]; then
 fi
 
 # Get the current branch
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+CURRENT_BRANCH=$(git branch --show-current)
 
 # Ensure we are merging from master to production
 if [[ "$CURRENT_BRANCH" != "production" ]]; then
@@ -25,7 +25,7 @@ if [[ "$CURRENT_BRANCH" != "production" ]]; then
 fi
 
 # Get the last commit message
-LAST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+LAST_COMMIT_MESSAGE=$(git log -1 --format=%s)
 
 # Check if commit message starts with fix:, feat:, or patch:
 if [[ ! "$LAST_COMMIT_MESSAGE" =~ ^(fix:|feat:|patch:|docs:|task:|ci:|cd:|test:) ]]; then
@@ -43,8 +43,13 @@ DAY=$(date +'%-d')   # Day without leading zero (1-31)
 # Fetch all tags
 git fetch --tags >/dev/null 2>&1
 
+# List all relevant tags for debugging
+echo "📌 Available tags:"
+git tag --list "v${YEAR}.${MONTH}.${DAY}.*"
+
 # Get latest increment for today's pattern
 LATEST_TAG=$(git tag --list "v${YEAR}.${MONTH}.${DAY}.*" | sort -t. -k4 -n | tail -n1)
+echo "✅ Latest tag for today: $LATEST_TAG"
 
 if [[ -z "$LATEST_TAG" ]]; then
   # No existing tags for today
@@ -57,8 +62,7 @@ fi
 
 # Format new version
 NEW_VERSION="v${YEAR}.${MONTH}.${DAY}.${NEXT_INCREMENT}"
-
-echo "New release version: $NEW_VERSION"
+echo "🚀 New version: $NEW_VERSION"
 
 # Step 2: Fetch the previous release tag for changelog link (not today)
 PREVIOUS_TAG=$(git tag --list | grep -v "v${YEAR}.${MONTH}.${DAY}." | sort -V | tail -n1)
@@ -70,10 +74,12 @@ else
 fi
 
 # Step 3: Get the latest commit hash (HEAD) after merging
-LAST_COMMIT_HASH=$(git rev-parse HEAD)
+#LAST_COMMIT_HASH=$(git rev-parse HEAD)
+#git log -1 --oneline | awk '{print $1}'
 
 # Shorten commit hash for display
-SHORT_COMMIT_HASH=$(echo "$LAST_COMMIT_HASH" | cut -c1-7)
+SHORT_COMMIT_HASH=$(git log -1 --oneline | awk '{print $1}')
+echo "Short Commit Hash: $SHORT_COMMIT_HASH"
 
 # Step 4: Categorize commit message based on type
 case "$LAST_COMMIT_MESSAGE" in
@@ -90,7 +96,7 @@ esac
 # Step 5: Generate release notes
 RELEASE_NOTES="*What's Changed* 🚀\n"
 RELEASE_NOTES="$RELEASE_NOTES\n 🔄 *New Release:* $NEW_VERSION\n"
-RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$LAST_COMMIT_HASH)*: $LAST_COMMIT_MESSAGE\n\n"
+RELEASE_NOTES="$RELEASE_NOTES\n *$CATEGORY* \n- *[$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SHORT_COMMIT_HASH)*: $LAST_COMMIT_MESSAGE\n\n"
 
 # Step 6: Output release notes
 echo -e "$RELEASE_NOTES"

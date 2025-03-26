@@ -3,7 +3,7 @@ name: Automated Release and Notification
 on:
   push:
     branches:
-      - main
+      - production
 jobs:
   release:
     name: Automated Release

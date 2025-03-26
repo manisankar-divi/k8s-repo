@@ -1,13 +1,10 @@
 name: CI
 
 on:
-  # Trigger CI on push to production or master
   push:
     branches: ["production", "master"]
   pull_request:
     branches: ["master"]
-
-  # Trigger CI after the release workflow completes
   workflow_run:
     workflows: ["Automated Release and Notification"]
     types:
@@ -16,8 +13,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
-    
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,3 +25,4 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
+

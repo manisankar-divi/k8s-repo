@@ -1,11 +1,46 @@
-# KUSTOMIZE
+# KUSTOMIZE ![image description](https://github.com/manisankar-divi/k8s-repo/blob/production/k-st.png)
 
 This repository demonstrates how to use Kustomize for managing Kubernetes manifests in a modular and reusable way. It includes a simple example with a base configuration and environment-specific overlays (e.g., staging, prod).
 
+## Installation
+To find the kustomize version embedded in recent versions of kubectl, run kubectl version:
+
+```bash
+kubectl version --client
+```
+output:
+```bash
+Client Version: v1.32.3
+Kustomize Version: v5.5.0
+
+```
+Install Below package in your linux machine.
+```bash
+curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+```
+
+Install Below package in your Mac machine.
+```bash
+brew install kustomize
+```
+
+Install Below package in your windows machine.
+```bash
+choco install kustomize
+```
+
+To check kustomize version 
+
+```bash
+kustomize version
+  or
+kubectl version --client
+```
 ## Directory Structure
 
 The repository is organized as follows:
-![image description]()
+![image description](https://github.com/manisankar-divi/k8s-repo/blob/production/k-st.png)
+
 serviceName
 ├── base (Production files)
 │ ├── serviceName-deployment.yaml / statefulset.yaml

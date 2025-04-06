@@ -115,47 +115,102 @@ mkdir nginx
 cd nginx
 mkdir base
 mkdir -p overlays/staging
-```
-
-#### Step:2
-`
-# base is production files
 cd base
-vim nginx-namespace.yaml
-`
-Replace your actual serviceName
+# base is production files
+```
+#### Step:2
+`vim nginx-namespace.yaml`
 ```yaml
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: nginx
+  name: nginx  #Replace your required serviceName
 ```
 #### Step:3
 `vim nginx-configmap.yaml`
-
 ```yaml
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: pod-reader
-rules:
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "watch", "list"]
-  - apiGroups: [""]
-    resources: ["deployments"]
-    verbs: ["get", "watch", "list"]
-  - apiGroups: [""]
-    resources: ["daemonset"]
-    verbs: ["get", "watch", "list"]
+  name: nginx-config  #Replace your required configmap-name
+  namespace: nginx  #Replace your required serviceName
+data:  #Replace your required configmap-data
+  index.html: |
+    <html>
+      <body>
+        <h1>Welcome to nginx!</h1>
+      </body>
+    </html>
 ```
 
-#### Step:1
-```bash
-mkdir nginx
-cd nginx
-mkdir base
-mkdir -p overlays/staging
+#### Step:4
+`vim nginx-deployment.yaml`
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx    #Replace your required serviceName
+  namespace: nginx    #Replace your required serviceName
+spec:
+  affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: servers.com/label  #Replace your required servers name
+                    operator: In
+                    values:
+                      - "Enter here your server name"
+  replicas: 1    #Replace your required serviceName
+  selector:
+    matchLabels:
+      app: nginx  #Replace your required serviceName
+  template:
+    metadata:
+      labels:
+        app: nginx    #Replace your required serviceName
+    spec:
+      containers:
+      - name: nginx      #Replace your required serviceName
+        image: nginx:latest    #Replace your required serviceName
+        volumeMounts:
+        - name: html    #Replace your required serviceName
+          mountPath: /usr/share/nginx/html    #Replace your required serviceName
+      volumes:  
+      - name: html    #Replace your required serviceName
+        configMap:
+          name: nginx-config    #Replace your required serviceName
+```
+
+#### Step:5
+`vim nginx-service.yaml`
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx    #Replace your required serviceName
+  namespace: nginx  #Replace your required serviceName
+spec:
+  selector:
+    app: nginx  #Replace your required serviceName
+  type: NodePort  #Replace your required serviceName
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30000  #Replace your required serviceName
+```
+#### Step:6
+`vim kustomization.yaml`
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:  #Replace your required serviceName
+  - nginx-namespace.yaml
+  - nginx-configmap.yaml
+  - vim nginx-deployment.yaml
+  - nginx-service.yaml
 ```
 ## Usage
 

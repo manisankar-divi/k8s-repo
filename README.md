@@ -1,4 +1,4 @@
-# KUSTOMIZE ![image description](https://github.com/manisankar-divi/k8s-repo/blob/production/k-st.png)
+# KUSTOMIZE <img src="https://github.com/manisankar-divi/k8s-repo/blob/production/k.png" width="33"/>
 
 This repository demonstrates how to use Kustomize for managing Kubernetes manifests in a modular and reusable way. It includes a simple example with a base configuration and environment-specific overlays (e.g., staging, prod).
 
@@ -8,7 +8,7 @@ To find the kustomize version embedded in recent versions of kubectl, run kubect
 ```bash
 kubectl version --client
 ```
-output:
+output looks like below:
 ```bash
 Client Version: v1.32.3
 Kustomize Version: v5.5.0

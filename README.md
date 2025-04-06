@@ -1,6 +1,6 @@
 # KUSTOMIZE <img src="https://github.com/manisankar-divi/k8s-repo/blob/production/k.png" width="33"/>
 
-This repository demonstrates how to use Kustomize for managing Kubernetes manifests in a modular and reusable way. It includes a simple example with a base configuration and environment-specific overlays (e.g., staging, prod).
+This repository demonstrates how to use [kustomize](https://kubectl.docs.kubernetes.io/guides) for managing Kubernetes manifests in a modular and reusable way. It includes a simple example with a base configuration and environment-specific overlays (e.g., staging, prod).
 
 ## Installation
 To find the kustomize version embedded in recent versions of kubectl, run kubectl version:
@@ -11,7 +11,7 @@ kubectl version --client
 output looks like below:
 ```bash
 Client Version: v1.32.3
-Kustomize Version: v5.5.0
+Kustomize Version: v5.5.0    ---> Already Installed
 ```
 
 Otherwise Install Below package in your linux machine.
@@ -57,7 +57,7 @@ serviceName
 
 ## base (Production yaml files)
 
-The base directory includes the Production Running Yaml manifests shared across Overlays/staging Environment. For example:
+The base directory includes the Production Running Yaml manifests shared across overlays/staging Environment. For example:
 
 - **serviceName-deployment.yaml / statefulset.yaml:**
 
@@ -108,9 +108,9 @@ nginx (serviceName)
         └── nginx-patch.yaml
 
 
-### Create the step by step process.
+### Create the step by step process for base.
 #### Step:1
-```bash
+```yaml
 mkdir nginx
 cd nginx
 mkdir base
@@ -124,7 +124,7 @@ cd base
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: nginx  #Replace your required serviceName
+  name: nginx  #Replace your required Name
 ```
 #### Step:3
 `vim nginx-configmap.yaml`
@@ -133,12 +133,12 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-config  #Replace your required configmap-name
-  namespace: nginx  #Replace your required serviceName
+  namespace: nginx  #Replace your required Name
 data:  #Replace your required configmap-data
   index.html: |
     <html>
       <body>
-        <h1>Welcome to nginx!</h1>
+        <h1>Welcome to nginx! production</h1>
       </body>
     </html>
 ```
@@ -150,7 +150,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx    #Replace your required serviceName
-  namespace: nginx    #Replace your required serviceName
+  namespace: nginx    #Replace your required Name
 spec:
   affinity:
         nodeAffinity:
@@ -161,7 +161,7 @@ spec:
                     operator: In
                     values:
                       - "Enter here your server name"
-  replicas: 1    #Replace your required serviceName
+  replicas: 1    #Replace your required count
   selector:
     matchLabels:
       app: nginx  #Replace your required serviceName
@@ -171,15 +171,17 @@ spec:
         app: nginx    #Replace your required serviceName
     spec:
       containers:
-      - name: nginx      #Replace your required serviceName
-        image: nginx:latest    #Replace your required serviceName
+      - name: nginx      #Replace your required container name
+        image: nginx:latest    #Replace your required Image name
+        ports:
+            - containerPort: 80    #Replace your required container port number
         volumeMounts:
-        - name: html    #Replace your required serviceName
-          mountPath: /usr/share/nginx/html    #Replace your required serviceName
+        - name: html    #Replace your required Volume  name
+          mountPath: /usr/share/nginx/html    #Replace your required file path
       volumes:  
-      - name: html    #Replace your required serviceName
+      - name: html    #Replace your required volume name
         configMap:
-          name: nginx-config    #Replace your required serviceName
+          name: nginx-config    #Replace your required Configmap name
 ```
 
 #### Step:5
@@ -188,17 +190,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx    #Replace your required serviceName
-  namespace: nginx  #Replace your required serviceName
+  name: nginx    #Replace your required service name
+  namespace: nginx  #Replace your required name
 spec:
   selector:
     app: nginx  #Replace your required serviceName
-  type: NodePort  #Replace your required serviceName
+  type: NodePort  #Replace your required type (ClusterIP,NodePort,LoadBalancer)
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
-      nodePort: 30000  #Replace your required serviceName
+      nodePort: 30000  #Replace your required port number.
 ```
 #### Step:6
 `vim kustomization.yaml`
@@ -209,9 +211,95 @@ kind: Kustomization
 resources:  #Replace your required serviceName
   - nginx-namespace.yaml
   - nginx-configmap.yaml
-  - vim nginx-deployment.yaml
+  - nginx-deployment.yaml
   - nginx-service.yaml
+  - nginx-*.yaml  (Add list of files)
 ```
+
+### Create the step by step process for overlays/staging.
+#### Step:1
+
+`vim kustomization.yaml`
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base # Reference the base directory
+patches:
+  - path: nginx-patch.yaml
+```
+#### Step:2
+
+`vim nginx-patch.yaml`
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx    #Replace your required serviceName staging
+  namespace: nginx    #Replace your required Name
+spec:
+  affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: servers.com/label  #Replace your required servers name staging
+                    operator: In
+                    values:
+                      - "Enter here your server name" # Replace your required name staging
+  replicas: 1    #Replace your required count staging
+  selector:
+    matchLabels:
+      app: nginx  #Replace your required serviceName staging
+  template:
+    metadata:
+      labels:
+        app: nginx    #Replace your required serviceName staging
+    spec:
+      containers:
+      - name: nginx      #Replace your required container name staging
+        image: nginx:latest    #Replace your required Image name  staging
+        ports:
+            - containerPort: 80    #Replace your required container port number staging
+        volumeMounts:
+        - name: html    #Replace your required Volume  name staging
+          mountPath: /usr/share/nginx/html    #Replace your required file path staging
+      volumes:  
+      - name: html    #Replace your required volume name staging
+        configMap:
+          name: nginx-config-staging    #Replace your required Configmap name staging
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx    #Replace your required service name staging
+  namespace: nginx  #Replace your required name 
+spec:
+  selector:
+    app: nginx  #Replace your required serviceName staging
+  type: NodePort  #Replace your required type (ClusterIP,NodePort,LoadBalancer) staging
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30001  #Replace your required port number. staging
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config-staging  #Replace your required configmap-name for staging
+  namespace: nginx  #Replace your required Name
+data:  #Replace your required configmap-data staging
+  index.html: |
+    <html>
+      <body>
+        <h1>Welcome to nginx! staging</h1>
+      </body>
+    </html>
+```
+`Note: Namespace in staging will taken from base directory nginx-namespace.yaml, we can add diff namespace if we need`
+
 ## Usage
 
 Explain how to test the project and give some example.
@@ -247,6 +335,3 @@ _Mention all those who helped you build the project, inspired you etc._
 - [Linus Torvalds](https://github.com/torvalds)
 - [Dan Abramov](https://github.com/gaearon)
 
-## License
-
-Describe the project [license](https://choosealicense.com/) agreements.

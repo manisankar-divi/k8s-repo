@@ -12,9 +12,9 @@ output looks like below:
 ```bash
 Client Version: v1.32.3
 Kustomize Version: v5.5.0
-
 ```
-Install Below package in your linux machine.
+
+Otherwise Install Below package in your linux machine.
 ```bash
 curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
 ```
@@ -51,30 +51,45 @@ serviceName
 │ └── kustomization.yaml
 ├── overlays
 │ └── staging
-│    ├── serviceName-deployment/statefulset-patch.yaml
+│    ├── serviceName-patch.yaml
 │    └── kustomization.yaml
 └── README.md
 
-## Base
+## base (Production yaml files)
 
 The base directory includes the Production Running Yaml manifests shared across Overlays/staging Environment. For example:
 
-- **deployment.yaml / statefulset.yaml:**
+- **serviceName-deployment.yaml / statefulset.yaml:**
 
   - **deployment.yaml** is used to manage stateless applications in Kubernetes, where all pods are identical and can be replaced anytime, such as web servers or APIs. On the other hand, **statefulset.yaml** is used for stateful applications that need stable network identities and persistent storage, like databases (e.g., PostgreSQL or Kafka). While Deployments focus on scalability and high availability, StatefulSets ensure data consistency and ordered pod management.
 
-- **service.yaml:**
+- **serviceName-service.yaml:**
 
   - **service.yaml** is a Kubernetes configuration file used to define a Service, which exposes a set of pods and enables network access to them. It acts as a stable endpoint (IP/hostname) for communication, even if the underlying pods change.
 
-- **configmap.yaml**
+- **serviceName-configmap.yaml**
 
   - **configmap.yaml** is a Kubernetes configuration file used to define a ConfigMap, which stores non-sensitive configuration data as key-value pairs. It helps you decouple configuration from application code, allowing changes without rebuilding your container image.
+ 
+- **serviceName-namespace.yaml**
+
+  - **namespace.yaml** In Kubernetes, a namespace is a mechanism for isolating groups of resources within a single cluster. It provides a scope for names, allowing resources to have unique names within a namespace but not necessarily across namespaces.
 
 - **kustomization.yaml**
   - **kustomization.yaml** is the main configuration file used by Kustomize, a Kubernetes-native tool that lets you customize Kubernetes manifests without modifying the original YAML files.
 
 The base/kustomization.yaml file references these resources.
+
+## overlays/staging
+
+The overlays/staging directory includes the staging Environment Yaml manifests:
+
+- **serviceName-patch.yaml:**
+
+  - **deployment.yaml** is used to manage stateless applications in Kubernetes, where all pods are identical and can be replaced anytime, such as web servers or APIs. On the other hand, **statefulset.yaml** is used for stateful applications that need stable network identities and persistent storage, like databases (e.g., PostgreSQL or Kafka). While Deployments focus on scalability and high availability, StatefulSets ensure data consistency and ordered pod management.
+
+- **kustomization.yaml**
+  - **kustomization.yaml** is the staging configuration file used by Kustomize, a Kubernetes-native tool that lets you customize Kubernetes manifests without modifying base YAML files.
 
 ### Prerequisites
 

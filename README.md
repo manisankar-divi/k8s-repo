@@ -86,21 +86,77 @@ The overlays/staging directory includes the staging Environment Yaml manifests:
 
 - **serviceName-patch.yaml:**
 
-  - **deployment.yaml** is used to manage stateless applications in Kubernetes, where all pods are identical and can be replaced anytime, such as web servers or APIs. On the other hand, **statefulset.yaml** is used for stateful applications that need stable network identities and persistent storage, like databases (e.g., PostgreSQL or Kafka). While Deployments focus on scalability and high availability, StatefulSets ensure data consistency and ordered pod management.
+  - **patch.yaml** in this we can write configuration for staging environment like deployment/statefulset, service, configmap, namespace, pv, pvc, etc..  in one single patch file 
 
 - **kustomization.yaml**
   - **kustomization.yaml** is the staging configuration file used by Kustomize, a Kubernetes-native tool that lets you customize Kubernetes manifests without modifying base YAML files.
 
-### Prerequisites
+## Demo Nginx service kustomization
 
-_A guide on how to install the tools needed for running the project._
+_A guide on how to implement nginx service._
 
-Explain the process step by step.
+nginx (serviceName)
+├── base
+│   ├── nginx-deployment.yaml
+│   ├── nginx-service.yaml
+│   ├── nginx-configmap.yaml
+│   ├── nginx-namespace.yaml
+│   └── kustomization.yaml
+└── overlays/
+    └── staging
+        ├── kustomization.yaml
+        └── nginx-patch.yaml
 
+
+### Create the step by step process.
+#### Step:1
 ```bash
-Install something
+mkdir nginx
+cd nginx
+mkdir base
+mkdir -p overlays/staging
 ```
 
+#### Step:2
+`
+# base is production files
+cd base
+vim nginx-namespace.yaml
+`
+Replace your actual serviceName
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nginx
+```
+#### Step:3
+`vim nginx-configmap.yaml`
+
+```yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-reader
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["deployments"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["daemonset"]
+    verbs: ["get", "watch", "list"]
+```
+
+#### Step:1
+```bash
+mkdir nginx
+cd nginx
+mkdir base
+mkdir -p overlays/staging
+```
 ## Usage
 
 Explain how to test the project and give some example.

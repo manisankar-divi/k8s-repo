@@ -5,19 +5,19 @@ This repository demonstrates how to use Kustomize for managing Kubernetes manife
 ## Directory Structure
 
 The repository is organized as follows:
-service
+![image description](relative/path/in/repository/to/image.svg)
+serviceName
 ├── base (Production files)
-│ ├── deployment.yaml / statefulset.yaml
-│ ├── service.yaml
-│ ├── configmap.yaml
-│ ├── pvc.yaml
-│ ├── \*.yaml
+│ ├── serviceName-deployment.yaml / statefulset.yaml
+│ ├── serviceName-service.yaml
+│ ├── serviceName-configmap.yaml
+│ ├── serviceName-namespace.yaml
+│ ├── serviceName-*.yaml
 │ └── kustomization.yaml
 ├── overlays
 │ └── staging
-│ ├── backend-secrets.yaml
-│ ├── configmap-backend.yaml
-│ └── kustomization.yaml
+│    ├── serviceName-deployment/statefulset-patch.yaml
+│    └── kustomization.yaml
 └── README.md
 
 ## Base

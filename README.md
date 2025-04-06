@@ -5,7 +5,7 @@ This repository demonstrates how to use Kustomize for managing Kubernetes manife
 ## Directory Structure
 
 The repository is organized as follows:
-![image description](relative/path/in/repository/to/image.svg)
+![image description]()
 serviceName
 ├── base (Production files)
 │ ├── serviceName-deployment.yaml / statefulset.yaml

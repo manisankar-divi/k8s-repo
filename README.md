@@ -3,7 +3,7 @@
 This repository demonstrates how to use [kustomize](https://kubectl.docs.kubernetes.io/guides) for managing Kubernetes manifests in a modular and reusable way. It includes a simple example with a base configuration and environment-specific overlays (e.g., staging, prod).
 
 ## Installation
-To find the kustomize version embedded in recent versions of kubectl, run kubectl version:
+To find the kustomize version embedded in recent versions of [kubectl](https://kubernetes.io/docs/tasks/tools/), run kubectl version:
 
 ```bash
 kubectl version --client
@@ -233,33 +233,29 @@ patches:
 
 `vim nginx-patch.yaml`
 ```yaml
+# If you not mention it will pick from base directory.
+# nignx-deployment-patch.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx    #Replace your required serviceName staging
   namespace: nginx    #Replace your required Name
 spec:
-  affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: servers.com/label  #Replace your required servers name staging
-                    operator: In
-                    values:
-                      - "Enter here your server name" # Replace your required name staging
-  replicas: 1    #Replace your required count staging
-  selector:
-    matchLabels:
-      app: nginx  #Replace your required serviceName staging
+  replicas: 2    #Replace your required count staging
   template:
-    metadata:
-      labels:
-        app: nginx    #Replace your required serviceName staging
     spec:
+      affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: servers.com/label  #Replace your required servers name staging
+                        operator: In
+                        values:
+                          - "Enter here your server name" # Replace your required name staging
       containers:
       - name: nginx      #Replace your required container name staging
-        image: nginx:latest    #Replace your required Image name  staging
+        image: nginx:1.27.4-alpine3.21    #Replace your required Image name  staging
         ports:
             - containerPort: 80    #Replace your required container port number staging
         volumeMounts:
@@ -270,6 +266,8 @@ spec:
         configMap:
           name: nginx-config-staging    #Replace your required Configmap name staging
 ---
+# If you not mention it will pick from base directory.
+# nginx-service-patch
 apiVersion: v1
 kind: Service
 metadata:
@@ -285,6 +283,8 @@ spec:
       targetPort: 80
       nodePort: 30001  #Replace your required port number. staging
 ---
+# If you not mention it will pick from base directory.
+# nginx-confimap-patch.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -300,38 +300,34 @@ data:  #Replace your required configmap-data staging
 ```
 `Note: Namespace in staging will taken from base directory nginx-namespace.yaml, we can add diff namespace if we need`
 
-## Usage
+## commands to build kustomize
+Check base kustomize yaml files. build keyword is like dry-run.
+```bash
+cd nginx
+kustomize build base
+```
+Verify build successfully gives output.
 
-Explain how to test the project and give some example.
+Check overlays/staging yaml files.
+```bash
+cd nginx
+kustomize build overlays/staging
+```
+Verify build successfully gives output.
+## commands to apply kustomize yaml files.
+```bash
+cd nginx
+kubectl apply -k base
+```
+Verify successfully created or not.
+
 
 ```bash
-Example
+cd nginx
+kubectl apply -k overlays/staging
 ```
-
-## Deploy
-
-Describe the tools needed to deploy a new project.
-
-## Technologies
-
-_Name the technologies used in the project._
-
-- [Spring](https://spring.io/) - Framework Used.
-- [React](https://reactjs.org/) - UI Library.
-- [Hibernate](https://hibernate.org/) - ORM.
-
-## Contributing
-
-Describe the steps to follow if someone wants to contribute to your project.
-
-## Documentation
-
-Specify [where](https://es.wikipedia.org/wiki/Wikipedia:Portada) people can find more documentation about your project.
-
-## Acknowledgments
-
-_Mention all those who helped you build the project, inspired you etc._
-
-- [Linus Torvalds](https://github.com/torvalds)
-- [Dan Abramov](https://github.com/gaearon)
-
+Verify successfully created or not.
+## Official Documentation
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [kustomize](https://kubectl.docs.kubernetes.io/guides)
+- [kubernetes](https://kubernetes.io/docs/home/)

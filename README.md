@@ -36,10 +36,12 @@ kustomize version
   or
 kubectl version --client
 ```
-## Directory Structure
+## Folder Structure
 
 The repository is organized as follows:
-![image description](https://github.com/manisankar-divi/k8s-repo/blob/production/k-st.png)
+
+<img src="https://github.com/manisankar-divi/k8s-repo/blob/production/k-st.png" width="500"/>
+
 
 serviceName
 ├── base (Production files)

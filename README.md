@@ -1,12 +1,8 @@
 # KUSTOMIZE
 
----
-
 This repository demonstrates how to use Kustomize for managing Kubernetes manifests in a modular and reusable way. It includes a simple example with a base configuration and environment-specific overlays (e.g., staging, prod).
 
 ## Directory Structure
-
----
 
 The repository is organized as follows:
 service

@@ -7,83 +7,92 @@ set -x
 : "${REPO_NAME:?REPO_NAME is not set}"
 : "${PERSONAL_ACCESS_TOKEN:?PERSONAL_ACCESS_TOKEN is not set}"
 
-# Initialize changelog if missing
-if [ ! -f CHANGELOG.md ]; then
-  cat > CHANGELOG.md << EOF
+# Initialize changelog with proper structure
+init_changelog() {
+  if [ ! -f CHANGELOG.md ]; then
+    cat << EOF > CHANGELOG.md
 # Changelog
 All notable changes to this project will be documented in this file.
 
-See [Keep a Changelog](https://keepachangelog.com/) for guidelines.
+## Unreleased
+
+### Changes
+- Initial project setup
 
 EOF
-fi
+  fi
+}
 
-# Verify branch
+init_changelog
+
+# Verify production branch
 CURRENT_BRANCH=$(git branch --show-current)
 if [[ "$CURRENT_BRANCH" != "production" ]]; then
   echo "Error: Releases must be made from production branch"
   exit 1
 fi
 
-# Validate commit message
+# Validate commit message format
 LAST_COMMIT_SUBJECT=$(git log -1 --format=%s)
 if [[ ! "$LAST_COMMIT_SUBJECT" =~ ^(fix:|feat:|patch:|docs:|task:|ci:|cd:|test:|add:|remove:|update:) ]]; then
   echo "Invalid commit message format. Must start with valid prefix."
   exit 1
 fi
 
-# Extract description
+# Extract description from commit body
 LAST_COMMIT_BODY=$(git log -1 --format=%b)
 DESCRIPTION=$(echo "$LAST_COMMIT_BODY" | sed -n '/^Description:-/,$p' | sed -n 's/^[[:space:]]*-\s*//p')
 
-# Generate version
+# Generate semantic version
 YEAR=$(date +%y)
 MONTH=$(date +%-m)
 DAY=$(date +%-d)
 git fetch --tags
 
 # Find latest tag for today
-LATEST_TAG=$(git tag --list "v$YEAR.$MONTH.$DAY.*" | sort -t. -k4 -n | tail -n1)
+LATEST_TAG=$(git tag --list "v$YEAR.$MONTH.$DAY.*" | sort -Vr | head -n1)
 if [[ -z "$LATEST_TAG" ]]; then
   NEXT_INCREMENT=1
 else
-  NEXT_INCREMENT=$(($(echo "$LATEST_TAG" | awk -F. '{print $4}') + 1))
+  NEXT_INCREMENT=$((${LATEST_TAG##*.} + 1))
 fi
 NEW_VERSION="v$YEAR.$MONTH.$DAY.$NEXT_INCREMENT"
 
-# Find previous release tag
-PREVIOUS_TAG=$(git tag --list | sort -V | awk -v version="$NEW_VERSION" '$0 < version' | tail -n1)
+# Determine previous release tag
+PREVIOUS_TAG=$(git tag --list | sort -Vr | awk -v version="$NEW_VERSION" '$0 < version' | head -n1)
 
-# Create release notes
+# Create release notes content
 SHORT_COMMIT_HASH=$(git rev-parse --short HEAD)
-FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/${PREVIOUS_TAG:-$NEW_VERSION}...$NEW_VERSION"
+FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/${PREVIOUS_TAG:-main}...$NEW_VERSION"
 
-case "$LAST_COMMIT_SUBJECT" in
-  fix:*)   CATEGORY='Bug Fixes 🐛';;
-  feat:*)  CATEGORY='Features ✨';;
-  patch:*) CATEGORY='Patches 🔧';;
-  docs:*)  CATEGORY='Documentation 📚';;
-  task:*)  CATEGORY='Tasks 📝';;
-  ci:*)    CATEGORY='CI Improvements ⚙️';;
-  cd:*)    CATEGORY='CD Improvements 🚀';;
-  test:*)  CATEGORY='Tests ✅';;
-  add:*)   CATEGORY='Added ➕';;
-  remove:*) CATEGORY='Removed ➖';;
-  update:*) CATEGORY='Updated ♻️';;
-  *)       CATEGORY='Miscellaneous 🧩';;
-esac
+# Map commit types to emojis
+declare -A CATEGORY_MAP=(
+  [fix:]='Bug Fixes 🐛'
+  [feat:]='Features ✨' 
+  [patch:]='Patches 🔧'
+  [docs:]='Documentation 📚'
+  [task:]='Tasks 📝'
+  [ci:]='CI Improvements ⚙️'
+  [cd:]='CD Improvements 🚀'
+  [test:]='Tests ✅'
+  [add:]='Added ➕'
+  [remove:]='Removed ➖'
+  [update:]='Updated ♻️'
+)
 
-RELEASE_NOTES="## What's Changed 🚀
+COMMIT_PREFIX="${LAST_COMMIT_SUBJECT%%:*}:"
+CATEGORY="${CATEGORY_MAP[$COMMIT_PREFIX]:-Miscellaneous �}"
 
-🔄 **New Release:** $NEW_VERSION
+# Build release notes template
+RELEASE_NOTES="## What's Changed in $NEW_VERSION 🚀
 
 ### $CATEGORY
-- [$SHORT_COMMIT_HASH](https://github.com/$REPO_OWNER/$REPO_NAME/commit/$SHORT_COMMIT_HASH): ${LAST_COMMIT_SUBJECT#*:}"
+- \`$SHORT_COMMIT_HASH\` ${LAST_COMMIT_SUBJECT#*:}"
 
 if [[ -n "$DESCRIPTION" ]]; then
   RELEASE_NOTES+="
 
-### Description
+### Detailed Description
 $DESCRIPTION"
 fi
 
@@ -92,40 +101,53 @@ RELEASE_NOTES+="
 **Full Changelog:** $FULL_CHANGELOG_LINK"
 
 # Create GitHub release
-payload=$(jq -n \
-  --arg tag "$NEW_VERSION" \
-  --arg name "$NEW_VERSION" \
-  --arg body "$RELEASE_NOTES" \
-  '{tag_name: $tag, name: $name, body: $body}')
+create_release() {
+  local payload=$(jq -n \
+    --arg tag "$NEW_VERSION" \
+    --arg name "$NEW_VERSION" \
+    --arg body "$RELEASE_NOTES" \
+    '{tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false}')
 
-response=$(curl -sSL -X POST \
-  -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
-  -H "Accept: application/vnd.github+json" \
-  -d "$payload" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases")
+  local response=$(curl -sS -X POST \
+    -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
+    -H "Accept: application/vnd.github+json" \
+    -d "$payload" \
+    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases")
 
-if echo "$response" | jq -e '.message' >/dev/null; then
-  echo "Release failed: $(echo "$response" | jq -r '.message')"
-  exit 1
-fi
+  if echo "$response" | jq -e '.errors' >/dev/null; then
+    echo "Release failed: $(echo "$response" | jq -r '.message')"
+    exit 1
+  fi
+}
 
-# Update changelog properly
-CHANGELOG_ENTRY="## $NEW_VERSION - $(date '+%Y-%m-%d')
+create_release
 
-$RELEASE_NOTES
+# Update changelog with bulletproof insertion
+update_changelog() {
+  local ENTRY_CONTENT="## $NEW_VERSION - $(date '+%Y-%m-%d')
 
-"
+$RELEASE_NOTES"
 
-# Insert after header using awk
-awk -v entry="$CHANGELOG_ENTRY" '
-  BEGIN {header=0; inserted=0}
-  /^# Changelog/ {header=1; print; next}
-  header && !inserted {print entry; inserted=1}
-  {print}
-' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+  # Create temp file with new entry
+  local TEMP_FILE=$(mktemp)
+  echo "$ENTRY_CONTENT" > "$TEMP_FILE"
 
-echo "Changelog updated successfully"
-echo "Release $NEW_VERSION created successfully!"
+  # Insert after header using ed
+  ed CHANGELOG.md << EOF
+/^# Changelog
++
+.r $TEMP_FILE
+w
+q
+EOF
+
+  rm "$TEMP_FILE"
+}
+
+update_changelog
+
+echo "Changelog updated successfully!"
+echo "New release $NEW_VERSION published!"
 
 ######################################################
 

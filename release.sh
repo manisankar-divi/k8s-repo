@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 set -e
 set -x
 
@@ -6,6 +6,15 @@ set -x
 : "${REPO_OWNER:?REPO_OWNER is not set}"
 : "${REPO_NAME:?REPO_NAME is not set}"
 : "${PERSONAL_ACCESS_TOKEN:?PERSONAL_ACCESS_TOKEN is not set}"
+
+# Check if CHANGELOG.md exists; if not, create it
+if [ ! -f CHANGELOG.md ]; then
+  echo "# Changelog" > CHANGELOG.md
+  echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
+  echo "" >> CHANGELOG.md
+  echo "See [Keep a Changelog](https://keepachangelog.com/) for guidelines." >> CHANGELOG.md
+  echo "" >> CHANGELOG.md
+fi
 
 # Retrieve the current branch
 CURRENT_BRANCH=$(git branch --show-current)
@@ -46,26 +55,42 @@ NEW_VERSION="v$YEAR.$MONTH.$DAY.$NEXT_INCREMENT"
 echo "🚀 New version: $NEW_VERSION"
 
 # Determine the previous tag for changelog
-PREVIOUS_TAG=$(git tag --list | grep -v "^v$YEAR\.$MONTH\.$DAY\." | sort -V | tail -n1)
+sorted_tags=($(git tag --list | sort -V))
+new_version="$NEW_VERSION"
+PREVIOUS_TAG=""
+for tag in "${sorted_tags[@]}"; do
+  if [[ "$tag" < "$new_version" ]]; then
+    PREVIOUS_TAG="$tag"
+  else
+    break
+  fi
+done
 
 # Retrieve short commit hash
 SHORT_COMMIT_HASH=$(git rev-parse --short HEAD)
 
 # Determine release category based on commit subject
 case "$LAST_COMMIT_SUBJECT" in
-fix:*) CATEGORY='Bug Fixes 🐛' ;;
-feat:*) CATEGORY='Features ✨' ;;
+fix:*)   CATEGORY='Bug Fixes 🐛' ;;
+feat:*)  CATEGORY='Features ✨' ;;
 patch:*) CATEGORY='Patches 🔧' ;;
-docs:*) CATEGORY='Documentation 📚' ;;
-task:*) CATEGORY='Tasks 📝' ;;
-ci:*) CATEGORY='CI Improvements ⚙️' ;;
-cd:*) CATEGORY='CD Improvements 🚀' ;;
-test:*) CATEGORY='Tests ✅' ;;
-add:*) CATEGORY='Added ➕' ;;
+docs:*)  CATEGORY='Documentation 📚' ;;
+task:*)  CATEGORY='Tasks 📝' ;;
+ci:*)    CATEGORY='CI Improvements ⚙️' ;;
+cd:*)    CATEGORY='CD Improvements 🚀' ;;
+test:*)  CATEGORY='Tests ✅' ;;
+add:*)   CATEGORY='Added ➕' ;;
 remove:*) CATEGORY='Removed ➖' ;;
 update:*) CATEGORY='Updated ♻️' ;;
-*) CATEGORY='Miscellaneous 🧩' ;;
+*)       CATEGORY='Miscellaneous 🧩' ;;
 esac
+
+# Construct Full Changelog Link
+if [[ -z "$PREVIOUS_TAG" ]]; then
+  FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/$NEW_VERSION"
+else
+  FULL_CHANGELOG_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/compare/$PREVIOUS_TAG...$NEW_VERSION"
+fi
 
 # Construct release notes
 RELEASE_NOTES="*What's Changed* 🚀
@@ -84,6 +109,7 @@ fi
 
 RELEASE_NOTES+="
 
+Full Changelog: $FULL_CHANGELOG_LINK"
 
 # Create JSON payload for the release
 payload=$(jq -n \
@@ -94,10 +120,10 @@ payload=$(jq -n \
 
 # Make API call to create the release
 response=$(curl -sSL -X POST \
-    -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
-    -H "Accept: application/vnd.github+json" \
-    -d "$payload" \
-    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases")
+  -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -d "$payload" \
+  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases")
 
 # Check for errors in the response
 if echo "$response" | jq -e '.message' >/dev/null; then
@@ -108,9 +134,17 @@ fi
 
 echo "Release $NEW_VERSION created successfully."
 
-# Append to CHANGELOG.md
-CHANGELOG_ENTRY=" ## $NEW_VERSION — $(date '+%Y-%m-%d')\n\n$RELEASE_NOTES\n"
-echo -e "$CHANGELOG_ENTRY" >>CHANGELOG.md
+# Create the new changelog entry
+CHANGELOG_ENTRY="## $NEW_VERSION — $(date '+%Y-%m-%d')\n\n$RELEASE_NOTES\n\n"
+
+# Backup CHANGELOG.md and rebuild with the new entry at the top
+cp CHANGELOG.md CHANGELOG.md.bak
+{ head -n5 CHANGELOG.md.bak; echo -e "$CHANGELOG_ENTRY"; tail -n +6 CHANGELOG.md.bak; } > CHANGELOG.md
+rm CHANGELOG.md.bak
+
+echo "Changelog updated with new release entry."
+
+######################################################
 
 # #!/usr/bin/env bash
 # # Exit script on error

@@ -9,11 +9,11 @@ set -x
 
 # Check if CHANGELOG.md exists; if not, create it
 if [ ! -f CHANGELOG.md ]; then
-  echo "# Changelog" > CHANGELOG.md
-  echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
-  echo "" >> CHANGELOG.md
-  echo "See [Keep a Changelog](https://keepachangelog.com/) for guidelines." >> CHANGELOG.md
-  echo "" >> CHANGELOG.md
+  echo "# Changelog" >CHANGELOG.md
+  echo "All notable changes to this project will be documented in this file." >>CHANGELOG.md
+  echo "" >>CHANGELOG.md
+  echo "See [Keep a Changelog](https://keepachangelog.com/) for guidelines." >>CHANGELOG.md
+  echo "" >>CHANGELOG.md
 fi
 
 # Retrieve the current branch
@@ -71,18 +71,18 @@ SHORT_COMMIT_HASH=$(git rev-parse --short HEAD)
 
 # Determine release category based on commit subject
 case "$LAST_COMMIT_SUBJECT" in
-fix:*)   CATEGORY='Bug Fixes 🐛' ;;
-feat:*)  CATEGORY='Features ✨' ;;
+fix:*) CATEGORY='Bug Fixes 🐛' ;;
+feat:*) CATEGORY='Features ✨' ;;
 patch:*) CATEGORY='Patches 🔧' ;;
-docs:*)  CATEGORY='Documentation 📚' ;;
-task:*)  CATEGORY='Tasks 📝' ;;
-ci:*)    CATEGORY='CI Improvements ⚙️' ;;
-cd:*)    CATEGORY='CD Improvements 🚀' ;;
-test:*)  CATEGORY='Tests ✅' ;;
-add:*)   CATEGORY='Added ➕' ;;
+docs:*) CATEGORY='Documentation 📚' ;;
+task:*) CATEGORY='Tasks 📝' ;;
+ci:*) CATEGORY='CI Improvements ⚙️' ;;
+cd:*) CATEGORY='CD Improvements 🚀' ;;
+test:*) CATEGORY='Tests ✅' ;;
+add:*) CATEGORY='Added ➕' ;;
 remove:*) CATEGORY='Removed ➖' ;;
 update:*) CATEGORY='Updated ♻️' ;;
-*)       CATEGORY='Miscellaneous 🧩' ;;
+*) CATEGORY='Miscellaneous 🧩' ;;
 esac
 
 # Construct Full Changelog Link
@@ -139,14 +139,18 @@ CHANGELOG_ENTRY="## $NEW_VERSION — $(date '+%Y-%m-%d')\n\n$RELEASE_NOTES\n\n"
 
 # Backup CHANGELOG.md and rebuild with the new entry at the top
 cp CHANGELOG.md CHANGELOG.md.bak
-{ head -n5 CHANGELOG.md.bak; echo -e "$CHANGELOG_ENTRY"; tail -n +6 CHANGELOG.md.bak; } > CHANGELOG.md
+{
+  head -n5 CHANGELOG.md.bak
+  echo -e "$CHANGELOG_ENTRY"
+  tail -n +6 CHANGELOG.md.bak
+} >CHANGELOG.md
 rm CHANGELOG.md.bak
 
 echo "Changelog updated with new release entry."
 
 ######################################################
 
-# #!/usr/bin/env bash
+# #!/usr/bin/bash
 # # Exit script on error
 # set -e
 # set -x

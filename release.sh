@@ -7,15 +7,6 @@ set -x
 : "${REPO_NAME:?REPO_NAME is not set}"
 : "${PERSONAL_ACCESS_TOKEN:?PERSONAL_ACCESS_TOKEN is not set}"
 
-# Check if CHANGELOG.md exists; if not, create it
-if [ ! -f CHANGELOG.md ]; then
-  echo "# Changelog" >CHANGELOG.md
-  echo "All notable changes to this project will be documented in this file." >>CHANGELOG.md
-  echo "" >>CHANGELOG.md
-  echo "See [Keep a Changelog](https://keepachangelog.com/) for guidelines." >>CHANGELOG.md
-  echo "" >>CHANGELOG.md
-fi
-
 # Retrieve the current branch
 CURRENT_BRANCH=$(git branch --show-current)
 if [[ "$CURRENT_BRANCH" != "production" ]]; then
@@ -93,7 +84,6 @@ fi
 
 RELEASE_NOTES+="
 
-Full Changelog: $FULL_CHANGELOG_LINK"
 
 # Create JSON payload for the release
 payload=$(jq -n \
@@ -104,10 +94,10 @@ payload=$(jq -n \
 
 # Make API call to create the release
 response=$(curl -sSL -X POST \
-  -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
-  -H "Accept: application/vnd.github+json" \
-  -d "$payload" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases")
+    -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
+    -H "Accept: application/vnd.github+json" \
+    -d "$payload" \
+    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases")
 
 # Check for errors in the response
 if echo "$response" | jq -e '.message' >/dev/null; then
@@ -119,11 +109,8 @@ fi
 echo "Release $NEW_VERSION created successfully."
 
 # Append to CHANGELOG.md
-CHANGELOG_ENTRY="## $NEW_VERSION — $(date '+%Y-%m-%d')\n\n$RELEASE_NOTES\n"
+CHANGELOG_ENTRY=" ## $NEW_VERSION — $(date '+%Y-%m-%d')\n\n$RELEASE_NOTES\n"
 echo -e "$CHANGELOG_ENTRY" >>CHANGELOG.md
-
-
-
 
 # #!/usr/bin/env bash
 # # Exit script on error

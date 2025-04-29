@@ -23,7 +23,7 @@ jobs:
       - name: Run Release Script
         id: release
         env:
-          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           REPO_OWNER: "manisankar-divi" # Replace with your GitHub username q
           REPO_NAME: "k8s-repo" # Replace with your repository name
         run: |

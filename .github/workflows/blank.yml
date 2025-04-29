@@ -25,3 +25,4 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
+          echo "successfully completed the workflow run"
